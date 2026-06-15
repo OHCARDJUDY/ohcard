@@ -624,27 +624,37 @@
             }
         }
 
-        // 提交問卷
         function submitSurvey() {
-            document.getElementById('survey-questions').classList.add('hidden');
-            document.getElementById('thank-you-screen').classList.remove('hidden');
-            
-            // 寫入 LocalStorage
-            const submissionRecord = {
-                id: Date.now().toString(),
-                timestamp: new Date().toLocaleString('zh-TW'),
-                name: formData.name,
-                answers: JSON.parse(JSON.stringify(formData.answers))
-            };
-            submissions.push(submissionRecord);
-            localStorage.setItem('oh_card_submissions', JSON.stringify(submissions));
-            
-            currentStep = questions.length;
-            updateProgress();
+    // 1. 準備資料
+    const submissionRecord = {
+        id: Date.now().toString(),
+        timestamp: new Date().toLocaleString('zh-TW'),
+        name: formData.name,
+        answers: JSON.parse(JSON.stringify(formData.answers))
+    };
 
-            // 重新整理後台
-            refreshAdminData();
-        }
+    // 2. 傳送到雲端 (這就是您的 Google Apps Script 網址)
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2_-ZXrc-j1znS4Ib2m7ut1GqnJ7Uxx3w8lUMy-bT8AjGFJlRDQ1e8l4rF0zTR0LC8dg/exec';
+    
+    fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionRecord)
+    }).catch(err => console.log("雲端同步失敗，僅儲存於本機", err));
+
+    // 3. 原有的本機儲存與介面轉換
+    document.getElementById('survey-questions').classList.add('hidden');
+    document.getElementById('thank-you-screen').classList.remove('hidden');
+    
+    submissions.push(submissionRecord);
+    localStorage.setItem('oh_card_submissions', JSON.stringify(submissions));
+    
+    currentStep = questions.length;
+    updateProgress();
+    refreshAdminData();
+}
+        
 
         // 開關管理後台
         function toggleAdminView() {
