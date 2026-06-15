@@ -272,9 +272,14 @@
         // Google Apps Script 雲端資料庫網址
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2_-ZXrc-j1znS4Ib2m7ut1GqnJ7Uxx3w8lUMy-bT8AjGFJlRDQ1e8l4rF0zTR0LC8dg/exec';
 
-        // 從網址讀取個案編號，例如：?case=A001
-        const urlParams = new URLSearchParams(window.location.search);
-        const caseId = urlParams.get('case') || '';
+        // 從網址讀取個案編號，例如：?SA001（不需 case= 前綴）
+        let caseId = window.location.search.replace(/^\?/, '');
+        // 若網址仍包含等號形式（例如 ?case=A001），也相容處理
+        if (caseId.includes('=')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            caseId = urlParams.get('case') || caseId;
+        }
+        caseId = decodeURIComponent(caseId);
 
         // 若有個案編號，於頁面上顯示
         if (caseId) {
