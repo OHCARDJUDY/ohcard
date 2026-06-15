@@ -137,12 +137,6 @@
                 <span class="block text-[10px] text-muji-400 font-medium tracking-widest uppercase">OH Card Exploration</span>
             </div>
         </div>
-        <div>
-            <button id="toggle-admin-btn" onclick="toggleAdminView()" class="px-5 py-2.5 rounded-full text-xs font-medium text-muji-500 bg-white hover:bg-muji-100 border border-muji-200 smooth-transition shadow-sm flex items-center gap-1.5 hover:shadow">
-                <i class="fa-regular fa-chart-bar"></i>
-                <span id="toggle-admin-text">切換至後台數據</span>
-            </button>
-        </div>
     </header>
 
     <main class="flex-grow flex items-center justify-center p-4 z-10">
@@ -245,58 +239,6 @@
             </div>
         </div>
 
-        <!-- 後台卡片 (超大圓角32px) -->
-        <div id="admin-view" class="w-full max-w-5xl muji-card rounded-[32px] overflow-hidden hidden smooth-transition relative">
-            <div class="p-6 md:p-10 space-y-6">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-muji-200 pb-6">
-                    <div>
-                        <h2 class="text-xl font-bold text-stone-800">回饋數據後台</h2>
-                        <p class="text-xs text-stone-400 font-medium mt-1">此頁面僅供服務提供者查看。資料目前保存在本機瀏覽器（LocalStorage）中。</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2.5">
-                        <button onclick="exportToCSV()" class="px-5 py-2.5 bg-moss-500 hover:bg-moss-600 text-white text-xs font-medium rounded-full shadow-sm smooth-transition flex items-center gap-1.5 hover:shadow">
-                            <i class="fa-solid fa-file-csv"></i>
-                            <span>匯出 CSV 報表</span>
-                        </button>
-                        <button onclick="triggerClearDataConfirm()" class="px-5 py-2.5 border border-stone-200 text-stone-500 hover:bg-stone-50 text-xs font-medium rounded-full smooth-transition flex items-center gap-1.5 hover:border-red-200 hover:text-red-500">
-                            <i class="fa-solid fa-trash-can"></i>
-                            <span>清空後台數據</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 數據摘要卡片 (圓角24px) -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="p-6 rounded-[24px] bg-muji-50 border border-muji-200 text-center relative overflow-hidden">
-                        <span class="block text-xs text-stone-400 font-semibold uppercase tracking-wider mb-1">累積填答人數</span>
-                        <span id="stat-total" class="text-3xl font-bold text-stone-800">0</span>
-                    </div>
-                    <div class="p-6 rounded-[24px] bg-muji-50 border border-muji-200 text-center relative overflow-hidden flex flex-col justify-center items-center">
-                        <span class="block text-xs text-stone-400 font-semibold uppercase tracking-wider mb-1">主要分享意願</span>
-                        <span id="stat-share-pref" class="text-xs font-semibold text-stone-700 truncate block mt-2 max-w-full">收集數據中...</span>
-                    </div>
-                    <div class="p-6 rounded-[24px] bg-muji-50 border border-muji-200 text-center relative overflow-hidden flex flex-col justify-center items-center">
-                        <span class="block text-xs text-stone-400 font-semibold uppercase tracking-wider mb-1">最新填寫時間</span>
-                        <span id="stat-latest" class="text-xs font-medium text-stone-500 block mt-2">--</span>
-                    </div>
-                </div>
-
-                <!-- 回饋紀錄清單 -->
-                <div class="space-y-4">
-                    <h3 class="text-xs font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5 px-1">
-                        <i class="fa-regular fa-file-alt text-muji-400"></i>
-                        <span>填答詳細紀錄 (<span id="record-count">0</span>)</span>
-                    </h3>
-                    
-                    <div class="max-h-[380px] overflow-y-auto custom-scrollbar space-y-4 pr-1" id="records-container">
-                        <div class="text-center py-16 text-stone-400 text-xs bg-white/40 rounded-3xl border border-dashed border-muji-200">
-                            <i class="fa-regular fa-folder-open text-3xl mb-3 text-muji-300 block"></i>
-                            目前尚無回饋紀錄。
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
     <footer class="w-full text-center py-8 text-xs text-stone-400 font-light z-10 border-t border-muji-200/20">
@@ -320,8 +262,8 @@
     </div>
 
     <script>
-        // 模擬資料庫
-        let submissions = JSON.parse(localStorage.getItem('oh_card_submissions')) || [];
+        // Google Apps Script 雲端資料庫網址
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2_-ZXrc-j1znS4Ib2m7ut1GqnJ7Uxx3w8lUMy-bT8AjGFJlRDQ1e8l4rF0zTR0LC8dg/exec';
 
         // 題目定義 (6題)
         const questions = [
@@ -624,221 +566,28 @@
             }
         }
 
+        // 提交問卷
         function submitSurvey() {
-    // 1. 準備資料
-    const submissionRecord = {
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleString('zh-TW'),
-        name: formData.name,
-        answers: JSON.parse(JSON.stringify(formData.answers))
-    };
+            document.getElementById('survey-questions').classList.add('hidden');
+            document.getElementById('thank-you-screen').classList.remove('hidden');
 
-    // 2. 傳送到雲端 (這就是您的 Google Apps Script 網址)
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2_-ZXrc-j1znS4Ib2m7ut1GqnJ7Uxx3w8lUMy-bT8AjGFJlRDQ1e8l4rF0zTR0LC8dg/exec';
-    
-    fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionRecord)
-    }).catch(err => console.log("雲端同步失敗，僅儲存於本機", err));
-
-    // 3. 原有的本機儲存與介面轉換
-    document.getElementById('survey-questions').classList.add('hidden');
-    document.getElementById('thank-you-screen').classList.remove('hidden');
-    
-    submissions.push(submissionRecord);
-    localStorage.setItem('oh_card_submissions', JSON.stringify(submissions));
-    
-    currentStep = questions.length;
-    updateProgress();
-    refreshAdminData();
-}
-        
-
-        // 開關管理後台
-        function toggleAdminView() {
-            const surveyCard = document.getElementById('survey-card');
-            const adminView = document.getElementById('admin-view');
-            const btnText = document.getElementById('toggle-admin-text');
-
-            if (adminView.classList.contains('hidden')) {
-                surveyCard.classList.add('hidden');
-                adminView.classList.remove('hidden');
-                btnText.textContent = '返回回饋表';
-                refreshAdminData();
-            } else {
-                adminView.classList.add('hidden');
-                surveyCard.classList.remove('hidden');
-                btnText.textContent = '切換至後台數據';
-            }
-        }
-
-        // 整理後台統計資料
-        function refreshAdminData() {
-            document.getElementById('stat-total').textContent = submissions.length;
-            document.getElementById('record-count').textContent = submissions.length;
-
-            const shareCounts = {
-                '可以匿名引用': 0,
-                '可以分享，但請不要完整引用': 0,
-                '暫時不希望公開分享': 0
+            const submissionRecord = {
+                id: Date.now().toString(),
+                timestamp: new Date().toLocaleString('zh-TW'),
+                name: formData.name,
+                answers: JSON.parse(JSON.stringify(formData.answers))
             };
 
-            submissions.forEach(sub => {
-                const choice = sub.answers['q6']?.selected;
-                if (choice && shareCounts[choice] !== undefined) {
-                    shareCounts[choice]++;
-                }
-            });
+            // 傳送到雲端 Google Sheet
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(submissionRecord)
+            }).catch(err => console.log("雲端同步失敗", err));
 
-            let topChoice = "暫無留言";
-            let maxCount = 0;
-            for (const [key, val] of Object.entries(shareCounts)) {
-                if (val > maxCount) {
-                    maxCount = val;
-                    topChoice = key;
-                }
-            }
-            document.getElementById('stat-share-pref').textContent = submissions.length > 0 ? `${topChoice} (${maxCount}票)` : "無數據";
-
-            if (submissions.length > 0) {
-                document.getElementById('stat-latest').textContent = submissions[submissions.length - 1].timestamp;
-            } else {
-                document.getElementById('stat-latest').textContent = '--';
-            }
-
-            const container = document.getElementById('records-container');
-            if (submissions.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-16 text-stone-400 text-xs bg-white/40 rounded-3xl border border-dashed border-muji-200">
-                        <i class="fa-regular fa-folder-open text-3xl mb-3 text-muji-300 block"></i>
-                        目前尚無回饋紀錄。
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            for (let i = submissions.length - 1; i >= 0; i--) {
-                const s = submissions[i];
-                
-                const q1 = s.answers['q1'] ? [...(s.answers['q1'].options || []), ...(s.answers['q1'].otherSelected ? ['其他: ' + s.answers['q1'].otherText] : [])].join(', ') : '未填';
-                const q2 = s.answers['q2'] ? [...(s.answers['q2'].options || []), ...(s.answers['q2'].otherSelected ? ['其他: ' + s.answers['q2'].otherText] : [])].join(', ') : '未填';
-                const q3 = s.answers['q3']?.text || '無';
-                const q4 = s.answers['q4']?.text || '無';
-                const q5 = s.answers['q5']?.text || '無';
-                const q6 = s.answers['q6']?.selected || '無';
-
-                html += `
-                    <div class="p-6 rounded-[24px] bg-white border border-muji-200 shadow-sm space-y-4 hover:shadow-md transition-all duration-300 relative">
-                        <div class="flex justify-between items-start border-b border-stone-200/40 pb-3">
-                            <div>
-                                <span class="font-bold text-stone-800 text-sm flex items-center gap-1">👤 ${s.name}</span>
-                                <span class="text-[10px] text-stone-400 font-medium block mt-0.5">${s.timestamp}</span>
-                            </div>
-                            <span class="text-xs px-3.5 py-1.5 rounded-full font-medium border ${q6 === '可以匿名引用' ? 'bg-moss-50 border-moss-200 text-moss-600' : q6 === '可以分享，但請不要完整引用' ? 'bg-muji-50 border-muji-200 text-muji-500' : 'bg-stone-50 border-stone-200 text-stone-500'}">
-                                ${q6}
-                            </span>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:text-sm">
-                            <div class="space-y-1">
-                                <span class="block text-stone-400 font-bold text-[10px] uppercase tracking-wide">Q1. 對談後狀態:</span>
-                                <p class="text-stone-700 font-medium">${q1}</p>
-                            </div>
-                            <div class="space-y-1">
-                                <span class="block text-stone-400 font-bold text-[10px] uppercase tracking-wide">Q2. 幫助最大的部分:</span>
-                                <p class="text-stone-700 font-medium">${q2}</p>
-                            </div>
-                            <div class="space-y-1 md:col-span-2">
-                                <span class="block text-stone-400 font-bold text-[10px] uppercase tracking-wide">Q3. 最大收穫:</span>
-                                <p class="text-stone-700 bg-muji-50/50 p-4 rounded-2xl border border-muji-200/40 font-normal leading-relaxed">${q3}</p>
-                            </div>
-                            <div class="space-y-1 md:col-span-2">
-                                <span class="block text-stone-400 font-bold text-[10px] uppercase tracking-wide">Q4. 給朋友的探索形容:</span>
-                                <p class="text-stone-700 bg-muji-50/50 p-4 rounded-2xl border border-muji-200/40 font-normal leading-relaxed">${q4}</p>
-                            </div>
-                            <div class="space-y-1 md:col-span-2">
-                                <span class="block text-stone-400 font-bold text-[10px] uppercase tracking-wide">Q5. 想說的話 / 調整建議:</span>
-                                <p class="text-stone-700 bg-muji-50/50 p-4 rounded-2xl border border-muji-200/40 font-normal leading-relaxed">${q5}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-        }
-
-        // 導出 CSV (帶有 UTF-8 BOM 避免 Excel 亂碼)
-        function exportToCSV() {
-            if (submissions.length === 0) {
-                showModal('warning', '系統提示', '目前尚無回饋數據可供匯出。');
-                return;
-            }
-
-            let csvContent = "\uFEFF"; 
-            csvContent += "流水號,時間,填答者,Q1_對談後狀態,Q2_最具幫助的部分,Q3_最大收穫,Q4_給朋友的探索形容,Q5_想對引導師說的話,Q6_分享意願\n";
-
-            submissions.forEach(s => {
-                const q1 = s.answers['q1'] ? [...(s.answers['q1'].options || []), ...(s.answers['q1'].otherSelected ? [s.answers['q1'].otherText] : [])].join('|') : '無';
-                const q2 = s.answers['q2'] ? [...(s.answers['q2'].options || []), ...(s.answers['q2'].otherSelected ? [s.answers['q2'].otherText] : [])].join('|') : '無';
-                const q3 = (s.answers['q3']?.text || '無').replace(/"/g, '""');
-                const q4 = (s.answers['q4']?.text || '無').replace(/"/g, '""');
-                const q5 = (s.answers['q5']?.text || '無').replace(/"/g, '""');
-                const q6 = s.answers['q6']?.selected || '無';
-
-                csvContent += `"${s.id}","${s.timestamp}","${s.name}","${q1}","${q2}","${q3}","${q4}","${q5}","${q6}"\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `OH卡探索回饋紀錄_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // 觸發自定義清除數據對話框 (完全取代 window.confirm)
-        function triggerClearDataConfirm() {
-            if (submissions.length === 0) {
-                showModal('warning', '系統提示', '目前尚無數據可供清除。');
-                return;
-            }
-
-            const modal = document.getElementById('custom-modal');
-            const iconContainer = document.getElementById('modal-icon-container');
-            const titleEl = document.getElementById('modal-title');
-            const messageEl = document.getElementById('modal-message');
-            const actionsContainer = document.getElementById('modal-actions-container');
-
-            titleEl.textContent = '確認清除紀錄';
-            messageEl.textContent = '確認要清空所有填答紀錄嗎？此動作將會刪除本機所有的 LocalStorage 資料，且此動作將不可復原。';
-
-            iconContainer.className = 'w-10 h-10 rounded-2xl flex items-center justify-center text-base bg-red-50 border border-red-200 text-red-500 flex-shrink-0';
-            iconContainer.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
-
-            // 注入確認和取消雙圓角按鈕
-            actionsContainer.innerHTML = `
-                <button onclick="closeModal()" class="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full text-xs font-medium smooth-transition">
-                    取消
-                </button>
-                <button onclick="executeClearAllData()" class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-medium smooth-transition shadow-sm">
-                    確認清空
-                </button>
-            `;
-
-            modal.classList.remove('hidden');
-        }
-
-        // 執行清空資料
-        function executeClearAllData() {
-            localStorage.removeItem('oh_card_submissions');
-            submissions = [];
-            refreshAdminData();
-            closeModal();
-            showModal('success', '清空成功', '已成功清除本機所有的填答紀錄。');
+            currentStep = questions.length;
+            updateProgress();
         }
 
         // 自定義簡約雙圓角彈窗
