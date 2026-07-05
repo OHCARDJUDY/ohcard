@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OH Studio — Exploration Workspace v2</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/tabler-icons.min.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --text-primary: #1a1a1a;
+      --text-secondary: #666;
+      --text-muted: #999;
+      --surface-0: #fff;
+      --surface-1: #f9f9f9;
+      --surface-2: #f0f0f0;
+      --border: #e0e0e0;
+      --fill-accent: #378add;
+      --text-accent: #fff;
+      --bg-accent: #e6f1fb;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text-primary: #f0f0f0;
+        --text-secondary: #a0a0a0;
+        --text-muted: #707070;
+        --surface-0: #1a1a1a;
+        --surface-1: #2a2a2a;
+        --surface-2: #3a3a3a;
+        --border: #444;
+        --fill-accent: #378add;
+        --text-accent: #fff;
+        --bg-accent: #0c447c;
+      }
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--surface-0);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 0;
+    }
+
+    .container { max-width: 420px; margin: 0 auto; }
+    
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 1rem;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--surface-2);
+    }
+    .header i { font-size: 18px; cursor: pointer; color: var(--text-secondary); }
+    .header-text { font-size: 13px; color: var(--text-secondary); }
+
+    /* Card Selection Area */
+    .card-section {
+      padding: 1rem;
+      background: var(--surface-1);
+      border-bottom: 0.5px solid var(--border);
+    }
+    .section-title { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 10px; }
+    
+    .card-slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem; }
+    .card-slot {
+      background: var(--surface-2);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .card-slot:hover { background: var(--surface-0); }
+    .card-slot i { font-size: 28px; color: var(--text-muted); margin-bottom: 6px; }
+    .card-slot-label { font-size: 12px; color: var(--text-muted); }
+
+    .selected-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .card-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--bg-accent);
+      border-radius: 16px;
+      font-size: 12px;
+      color: var(--fill-accent);
+    }
+    .card-tag i { font-size: 14px; cursor: pointer; }
+
+    /* Card Picker Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-content {
+      background: var(--surface-0);
+      border-radius: 12px;
+      max-width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      width: 100%;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .modal-title { font-size: 16px; font-weight: 500; }
+    .modal-close { font-size: 20px; cursor: pointer; }
+
+    .search-box {
+      width: 100%;
+      padding: 8px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 1rem;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .card-item {
+      aspect-ratio: 1;
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .card-item:hover { border-color: var(--fill-accent); }
+    .card-item.selected { background: var(--bg-accent); border-color: var(--fill-accent); }
+
+    /* Story Section */
+    .story-section {
+      padding: 1rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+    
+    .story-area {
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 1rem;
+    }
+    .story-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+    textarea {
+      width: 100%;
+      font-size: 13px;
+      padding: 8px;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-1);
+      color: var(--text-primary);
+      font-family: inherit;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    /* Tab Navigation */
+    .tab-nav { display: flex; border-bottom: 0.5px solid var(--border); padding: 0 1rem; }
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--fill-accent);
+    }
+
+    /* Tab Content */
+    .tab-content { padding: 1rem; display: none; }
+    .tab-content.active { display: block; }
+
+    /* Data Section */
+    .data-subsection { margin-bottom: 1.5rem; }
+    .subsection-title { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+
+    .metric-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      background: var(--surface-2);
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+    .metric-name { font-size: 12px; color: var(--text-primary); min-width: 60px; }
+    .metric-slider { flex: 1; }
+    .metric-value { font-size: 12px; color: var(--text-muted); min-width: 24px; text-align: right; }
+
+    .add-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+      border: 0.5px solid var(--border);
+      background: var(--surface-1);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+
+    .entity-card {
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .entity-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .entity-row { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+    .position-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin: 8px 0;
+    }
+    .position-cell {
+      aspect-ratio: 1;
+      background: var(--surface-1);
+      border: 0.5px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .position-cell:hover { border-color: var(--fill-accent); }
+    .position-cell.selected { background: var(--fill-accent); }
+
+    /* Tags Section */
+    .tags-area {
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .tag-input {
+      width: 100%;
+      padding: 8px;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-1);
+      color: var(--text-primary);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .tags-display { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: var(--bg-accent);
+      border-radius: 12px;
+      font-size: 11px;
+      color: var(--fill-accent);
+    }
+    .tag i { cursor: pointer; }
+
+    .select-box {
+      width: 100%;
+      padding: 8px;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-1);
+      color: var(--text-primary);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .long-textarea {
+      width: 100%;
+      padding: 10px;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface-1);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 12px;
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <i class="ti ti-arrow-left"></i>
+    <span class="header-text">SA003-2 · Exploration Workspace</span>
+  </div>
+
+  <!-- Card Selection -->
+  <div class="card-section">
+    <div class="section-title">使用牌卡</div>
+    <div class="card-slots">
+      <div class="card-slot" onclick="openCardPicker('image')">
+        <i class="ti ti-image"></i>
+        <span class="card-slot-label">圖像牌</span>
+      </div>
+      <div class="card-slot" onclick="openCardPicker('word')">
+        <i class="ti ti-letter-a"></i>
+        <span class="card-slot-label">文字牌</span>
+      </div>
+    </div>
+    <div class="selected-cards" id="selectedCards">
+      <div class="card-tag">
+        <span>Journey</span>
+        <i class="ti ti-x" onclick="removeCard(this)"></i>
+      </div>
+      <div class="card-tag">
+        <span>Courage</span>
+        <i class="ti ti-x" onclick="removeCard(this)"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Story Section -->
+  <div class="story-section">
+    <div class="section-title">故事</div>
+    <div class="story-area">
+      <div class="story-label">故事（前）</div>
+      <textarea placeholder="客戶一開始說的故事...">我一直很害怕失敗，所以從不敢嘗試新東西。</textarea>
+    </div>
+    <div class="story-area">
+      <div class="story-label">故事（後）</div>
+      <textarea placeholder="經過引導後，客戶說了什麼..."></textarea>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('data')">記錄數據</button>
+    <button class="tab-btn" onclick="switchTab('methodology')">方法論標籤</button>
+  </div>
+
+  <!-- Tab 1: Data Recording -->
+  <div id="dataTab" class="tab-content active">
+    <div class="data-subsection">
+      <div class="subsection-title">量化觀察</div>
+      <div class="metric-item">
+        <span class="metric-name">喜悅</span>
+        <input type="range" class="metric-slider" min="0" max="10" value="6">
+        <span class="metric-value">6</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-name">害怕</span>
+        <input type="range" class="metric-slider" min="0" max="10" value="8">
+        <span class="metric-value">8</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-name">熱度</span>
+        <input type="range" class="metric-slider" min="0" max="10" value="5">
+        <span class="metric-value">5</span>
+      </div>
+      <button class="add-btn">+ 新增指標</button>
+    </div>
+
+    <div class="data-subsection">
+      <div class="subsection-title">人物 / 物件</div>
+      <div class="entity-card">
+        <div class="entity-name">自己</div>
+        <div class="entity-row">📍 位置: <span>圖內</span></div>
+        <div class="entity-row">📏 距離: <span>5</span></div>
+        <div class="entity-row">💭 情緒: <span>害怕、不安</span></div>
+      </div>
+      <div class="entity-card">
+        <div class="entity-name">媽媽</div>
+        <div class="entity-row">📍 位置: <span>圖外</span></div>
+        <div class="entity-row">📏 距離: <span>8</span></div>
+        <div class="entity-row">💭 情緒: <span>期待、壓力</span></div>
+      </div>
+      <button class="add-btn">+ 新增人物/物件</button>
+    </div>
+
+    <div class="data-subsection">
+      <div class="subsection-title">觀察與推論</div>
+      <div class="story-area">
+        <div class="story-label">我的觀察</div>
+        <textarea placeholder="我看到或注意到什麼...">客戶在提到「失敗」時，聲音變小，肩膀內縮。</textarea>
+      </div>
+      <div class="story-area">
+        <div class="story-label">我的推論</div>
+        <textarea placeholder="基於觀察的推論...">這暗示著對失敗的深層恐懼，可能與過往經驗或自我認同有關。</textarea>
+      </div>
+      <div class="story-area">
+        <div class="story-label">下一步探索</div>
+        <textarea placeholder="接下來可以問什麼...">「如果失敗不是世界末日，對你會有什麼不同？」</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Methodology Tags -->
+  <div id="methodologyTab" class="tab-content">
+    <div class="data-subsection">
+      <div class="subsection-title">個案類型（主述困擾）</div>
+      <select class="select-box">
+        <option>-- 選擇或新增 --</option>
+        <option>缺乏行動力</option>
+        <option>無法做決定</option>
+        <option>容易放棄</option>
+        <option>+ 新增新類型</option>
+      </select>
+    </div>
+
+    <div class="data-subsection">
+      <div class="subsection-title">起因關鍵字（可多選）</div>
+      <div class="tags-area">
+        <input type="text" class="tag-input" placeholder="輸入或選擇關鍵字...">
+        <div class="tags-display">
+          <div class="tag">
+            <span>低效能感（缺乏內在權威）</span>
+            <i class="ti ti-x"></i>
+          </div>
+          <div class="tag">
+            <span>恐懼失敗</span>
+            <i class="ti ti-x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-subsection">
+      <div class="subsection-title">心理模式</div>
+      <select class="select-box">
+        <option>-- 選擇或新增 --</option>
+        <option>現況不滿 → 歸因過去 → 自我懷疑 → 卡關</option>
+        <option>完美期待 → 實現困難 → 自我否定 → 逃避</option>
+        <option>+ 新增新模式</option>
+      </select>
+    </div>
+
+    <div class="data-subsection">
+      <div class="subsection-title">我的解牌思路與心路歷程</div>
+      <textarea class="long-textarea" placeholder="記錄你如何看出這個模式、你的內在反應、你的引導策略...">我注意到客戶在提到「選擇」時的身體反應。這讓我推測背後可能有失敗經驗的陰影。我用「如果」開頭的問句，幫助她在安全的想像空間裡，重新看待失敗的含義。</textarea>
+    </div>
+
+    <div class="data-subsection">
+      <div class="subsection-title">有效問句</div>
+      <div class="tags-area">
+        <input type="text" class="tag-input" placeholder="輸入問句...">
+        <div class="tags-display">
+          <div class="tag">
+            <span>「如果失敗不是世界末日，會怎樣？」</span>
+            <i class="ti ti-x"></i>
+          </div>
+          <div class="tag">
+            <span>「誰告訴你失敗=無能？」</span>
+            <i class="ti ti-x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-subsection">
+      <div class="subsection-title">有效卡牌組合</div>
+      <div class="tags-area">
+        <input type="text" class="tag-input" placeholder="輸入卡牌組合描述...">
+        <div class="tags-display">
+          <div class="tag">
+            <span>Journey + Courage（恐懼→勇氣的轉變）</span>
+            <i class="ti ti-x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card Picker Modal -->
+<div id="cardPickerModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="pickerTitle">選擇圖像牌</div>
+      <div class="modal-close" onclick="closeCardPicker()"><i class="ti ti-x"></i></div>
+    </div>
+    
+    <input type="text" class="search-box" id="cardSearch" placeholder="搜尋...">
+    
+    <div class="card-grid" id="cardGrid">
+      <div class="card-item">
+        <span>Journey</span>
+      </div>
+      <div class="card-item">
+        <span>Courage</span>
+      </div>
+      <div class="card-item">
+        <span>Fire</span>
+      </div>
+      <div class="card-item">
+        <span>Water</span>
+      </div>
+      <div class="card-item">
+        <span>Door</span>
+      </div>
+      <div class="card-item">
+        <span>Mirror</span>
+      </div>
+      <div class="card-item">
+        <span>Crown</span>
+      </div>
+      <div class="card-item">
+        <span>Snake</span>
+      </div>
+      <div class="card-item">
+        <span>Bridge</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(tabName) {
+    // Hide all tabs
+    document.getElementById('dataTab').classList.remove('active');
+    document.getElementById('methodologyTab').classList.remove('active');
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Show selected tab and button
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function openCardPicker(type) {
+    document.getElementById('cardPickerModal').classList.add('active');
+    document.getElementById('pickerTitle').textContent = type === 'image' ? '選擇圖像牌' : '選擇文字牌';
+  }
+
+  function closeCardPicker() {
+    document.getElementById('cardPickerModal').classList.remove('active');
+  }
+
+  function removeCard(el) {
+    el.closest('.card-tag').remove();
+  }
+</script>
+
+</body>
+</html>
