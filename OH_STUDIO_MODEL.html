@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OH Studio — 探索工作區 v3</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/tabler-icons.min.css" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+:root{--bg:#F6F0E4;--surface:#FFFCF5;--surface-2:#FBF5E9;--ink:#2B241D;--ink-soft:#736452;--ink-faint:#A4937C;--plum:#4A2444;--plum-soft:#7A4E72;--plum-pale:#EFE2EC;--gold:#AE8429;--gold-pale:#F1E5C6;--line:#E2D4B8;--danger:#963A3A;--danger-pale:#F4E1DD;--radius:10px;--shadow:0 1px 2px rgba(43,36,29,0.06),0 4px 14px rgba(43,36,29,0.06);}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:15px;line-height:1.6;}
+.app{max-width:940px;margin:0 auto;padding:24px 18px 80px;}
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line);}
+.brand h1{font-family:'Noto Serif TC',serif;font-weight:700;font-size:22px;margin:0;}
+.brand p{margin:2px 0 0;font-size:12.5px;color:var(--ink-soft);}
+.back-link{color:var(--plum);cursor:pointer;font-size:14px;}
+.snapshot{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:22px;box-shadow:var(--shadow);overflow:hidden;}
+.snapshot-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface-2);border-bottom:1px solid var(--line);}
+.snapshot-title-group{display:flex;align-items:center;gap:12px;}
+.snapshot-number{width:28px;height:28px;border-radius:50%;background:var(--plum);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+.snapshot-title{font-size:16px;font-weight:600;}
+.snapshot-body{padding:18px;}
+.subhead{font-size:13px;font-weight:600;color:var(--ink-soft);margin:0 0 10px;display:flex;align-items:center;gap:6px;}
+.subhead:not(:first-child){margin-top:20px;}
+
+/* Photo upload */
+.photo-upload{border:2px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--ink-faint);cursor:pointer;margin-bottom:16px;font-size:13px;}
+.photo-upload:hover{border-color:var(--plum);color:var(--plum);}
+.photo-preview{max-width:100%;border-radius:8px;margin-bottom:16px;}
+
+/* Card set - word cards as frames holding image cards */
+.cardset{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;margin-bottom:16px;padding:16px;background:var(--surface-2);border-radius:8px;min-height:120px;}
+.card-frame{border:2px solid var(--gold);border-radius:10px;padding:8px;background:var(--gold-pale);display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
+.card-frame-label{font-size:13px;font-weight:700;color:var(--gold);}
+.card-frame-inner{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-width:76px;min-height:100px;align-items:center;}
+.img-card{position:relative;width:66px;height:92px;border-radius:6px;overflow:hidden;border:1px solid var(--line);}
+.img-card img{width:100%;height:100%;object-fit:cover;display:block;}
+.img-card .num{position:absolute;top:1px;left:1px;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:0 3px;border-radius:2px;}
+.img-card .rm{position:absolute;top:1px;right:1px;background:rgba(150,58,58,0.9);color:#fff;width:14px;height:14px;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.add-img-in-frame{width:66px;height:92px;border:1px dashed var(--gold);border-radius:6px;background:transparent;color:var(--gold);cursor:pointer;font-size:20px;}
+.frame-rm{position:absolute;top:-8px;right:-8px;background:var(--danger);color:#fff;width:20px;height:20px;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--surface);}
+.loose-img{position:relative;}
+.add-card-controls{display:flex;flex-direction:column;gap:8px;}
+.add-frame-btn,.add-loose-btn{padding:10px 14px;border:1px dashed var(--gold);border-radius:8px;background:transparent;color:var(--gold);cursor:pointer;font-size:13px;white-space:nowrap;}
+.add-loose-btn{border-color:var(--plum-soft);color:var(--plum-soft);}
+.free-word-note{font-size:11px;color:var(--ink-faint);margin-top:4px;}
+
+/* Per-card + integrated story */
+.field{display:flex;flex-direction:column;margin-bottom:14px;}
+.field label{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink);}
+.field textarea,.field input{padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px;resize:vertical;}
+.field textarea{min-height:60px;}
+.field textarea:focus,.field input:focus{outline:none;border-color:var(--plum);box-shadow:0 0 0 3px var(--plum-pale);background:var(--surface);}
+.integrated-story label{color:var(--plum);font-size:14px;font-weight:700;}
+.percard-story{padding-left:12px;border-left:3px solid var(--gold-pale);}
+
+/* Entities */
+.entity-card{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;}
+.entity-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.entity-name-input{font-size:15px;font-weight:600;border:none;background:transparent;color:var(--plum);padding:4px 0;border-bottom:1px solid var(--line);font-family:inherit;}
+.entity-name-input:focus{outline:none;border-bottom-color:var(--plum);}
+.entity-remove{color:var(--danger);cursor:pointer;font-size:13px;}
+.entity-controls{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:600px){.entity-controls{grid-template-columns:1fr;}}
+.pos-mode-tabs{display:flex;gap:4px;margin-bottom:10px;}
+.pos-mode-btn{flex:1;padding:6px;font-size:12px;border:1px solid var(--line);background:var(--surface);border-radius:6px;cursor:pointer;color:var(--ink-soft);font-family:inherit;}
+.pos-mode-btn.active{background:var(--plum);color:#fff;border-color:var(--plum);}
+.position-grid-wrap{display:flex;justify-content:center;padding:8px;}
+.outer-grid{display:grid;grid-template-columns:repeat(5,26px);grid-template-rows:repeat(5,26px);gap:2px;}
+.grid-cell{background:var(--surface);border:1px solid var(--line);border-radius:3px;cursor:pointer;}
+.grid-cell:hover{border-color:var(--plum-soft);}
+.grid-cell.selected{background:var(--plum);border-color:var(--plum);}
+.grid-cell.inner{background:var(--gold-pale);border-color:var(--gold);}
+.grid-cell.inner.selected{background:var(--gold);border-color:var(--gold);}
+.bird-wrap{display:none;padding:12px 0;}
+.emotion-label{font-size:12px;color:var(--ink-soft);margin-bottom:8px;}
+.emotion-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.emotion-name{font-size:13px;padding:4px 10px;background:var(--plum-pale);border-radius:999px;color:var(--plum);white-space:nowrap;}
+.emotion-strength{flex:1;}
+.emotion-val{font-size:12px;color:var(--ink-soft);min-width:20px;}
+.emotion-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.emo-chip{font-size:12px;padding:4px 10px;border:1px solid var(--plum-soft);background:transparent;border-radius:999px;color:var(--plum-soft);cursor:pointer;font-family:inherit;}
+.emo-chip:hover{background:var(--plum-pale);}
+.add-entity-btn{width:100%;padding:10px;background:transparent;border:1px dashed var(--line);border-radius:8px;color:var(--ink-soft);font-size:13px;cursor:pointer;margin-top:8px;font-family:inherit;}
+.metrics-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;padding:14px;background:var(--surface-2);border-radius:8px;}
+.metric-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;}
+.metric-chip-name{font-size:12px;color:var(--ink-soft);}
+.metric-chip-val{font-size:13px;font-weight:600;color:var(--plum);min-width:16px;}
+.add-metric-chip{padding:8px 12px;border:1px dashed var(--gold);background:transparent;border-radius:8px;color:var(--gold);font-size:12px;cursor:pointer;font-family:inherit;}
+
+/* Closing section - client-facing outputs */
+.closing{margin-top:20px;padding:16px;background:var(--plum-pale);border-radius:8px;border:1px solid var(--plum-soft);}
+.closing-title{font-size:14px;font-weight:700;color:var(--plum);margin-bottom:12px;}
+.closing .field textarea{background:var(--surface);}
+.client-badge{display:inline-block;font-size:10px;padding:2px 8px;background:var(--gold);color:#fff;border-radius:999px;margin-left:8px;vertical-align:middle;}
+
+.add-snapshot-btn{width:100%;padding:16px;background:var(--plum);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow);margin-top:8px;font-family:inherit;}
+.add-snapshot-hint{text-align:center;font-size:12px;color:var(--ink-faint);margin-top:8px;}
+
+/* Methodology section */
+.methodology{margin-top:32px;padding:22px;background:var(--plum-pale);border:1px solid var(--plum-soft);border-radius:var(--radius);}
+.methodology-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--plum-soft);}
+.methodology-head i{font-size:26px;color:var(--plum);}
+.methodology-title{font-size:17px;font-weight:700;color:var(--plum);}
+.methodology-sub{font-size:12px;color:var(--plum-soft);margin-top:2px;}
+.methodology .field select,.methodology .field textarea,.methodology .field input{background:var(--surface);}
+.mtag-box{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:8px;}
+.mtag-input{width:100%;border:none;background:transparent;padding:6px;font-family:inherit;font-size:14px;}
+.mtag-input:focus{outline:none;}
+.mtags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.mtag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--plum-pale);border:1px solid var(--plum-soft);border-radius:999px;font-size:12px;color:var(--plum);}
+.mtag .x{cursor:pointer;font-weight:700;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(43,36,29,0.4);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal-content{background:var(--surface);border-radius:var(--radius);max-width:720px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line);}
+.modal-title{font-size:17px;font-weight:600;}
+.modal-close{font-size:24px;cursor:pointer;color:var(--ink-faint);border:none;background:none;}
+.modal-tabs{display:flex;gap:8px;padding:12px 20px 0;}
+.modal-tab{padding:8px 16px;border:none;background:transparent;border-bottom:2px solid transparent;cursor:pointer;font-size:14px;color:var(--ink-soft);font-family:inherit;}
+.modal-tab.active{color:var(--plum);border-bottom-color:var(--plum);font-weight:600;}
+.modal-search{padding:12px 20px;}
+.modal-search input{width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius);font-size:14px;font-family:inherit;}
+.modal-body{flex:1;overflow-y:auto;padding:0 20px 20px;}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;}
+.picker-card{cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;background:var(--surface-2);}
+.picker-card:hover{border-color:var(--plum);}
+.picker-card-img{width:100%;aspect-ratio:5/7;}
+.picker-card-img img{width:100%;height:100%;object-fit:cover;display:block;}
+.picker-card-label{font-size:11px;text-align:center;padding:4px;color:var(--ink-soft);}
+.word-list{display:flex;flex-wrap:wrap;gap:8px;}
+.word-chip{padding:8px 14px;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-size:13px;background:var(--surface-2);}
+.word-chip:hover{border-color:var(--gold);background:var(--gold-pale);color:var(--gold);}
+.word-chip.blank{border-style:dashed;color:var(--ink-faint);}
+.free-word-box{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);}
+.free-word-box label{font-size:13px;font-weight:600;display:block;margin-bottom:6px;}
+.free-word-box .hint{font-size:11px;color:var(--ink-faint);margin-bottom:8px;}
+.custom-word-input{display:flex;gap:8px;}
+.custom-word-input input{flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);font-family:inherit;}
+.custom-word-input button{padding:8px 16px;background:var(--plum-soft);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-family:inherit;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><h1>OH Studio</h1><p>SA004-1 • Nathalie • 探索工作區</p></div>
+    <span class="back-link">← 回個案</span>
+  </div>
+  <div id="snapshotContainer"></div>
+  <button class="add-snapshot-btn" onclick="addSnapshot()"><i class="ti ti-plus"></i> 新增探索快照</button>
+  <div class="add-snapshot-hint">每次換牌，建立一個新快照。字卡是「框」，圖卡放進框裡；也可單放圖卡。</div>
+
+  <!-- 方法論標籤區（整個探索層級，貢獻到 Judy Method Library） -->
+  <div class="methodology">
+    <div class="methodology-head">
+      <i class="ti ti-books"></i>
+      <div>
+        <div class="methodology-title">方法論標籤</div>
+        <div class="methodology-sub">標記這次探索對方法論庫的貢獻。長期累積，形成 Judy Method。</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>個案類型（主述困擾）</label>
+      <select>
+        <option>— 選擇或新增 —</option>
+        <option>缺乏行動力</option>
+        <option>無法做決定</option>
+        <option>容易放棄</option>
+        <option>+ 新增新類型</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>起因關鍵字（可多選）</label>
+      <div class="mtag-box">
+        <input type="text" class="mtag-input" placeholder="輸入關鍵字，按 Enter（例：低效能感）" onkeydown="if(event.key==='Enter'){addMTag(this,'cause');event.preventDefault();}">
+        <div class="mtags" id="mtags-cause">
+          <span class="mtag">低效能感（缺乏內在權威）<span class="x" onclick="this.parentElement.remove()">×</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>心理模式（成因鏈）</label>
+      <select>
+        <option>— 選擇或新增 —</option>
+        <option>現況不滿→歸因過去→懷疑自己→害怕選擇→尋求外部擔保→不敢行動→卡關</option>
+        <option>+ 新增新模式</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>我的解牌思路與心路歷程</label>
+      <textarea placeholder="你如何看出這個模式、你的內在反應、你的引導策略..." style="min-height:90px"></textarea>
+    </div>
+
+    <div class="field">
+      <label>有效問句</label>
+      <div class="mtag-box">
+        <input type="text" class="mtag-input" placeholder="輸入問句，按 Enter" onkeydown="if(event.key==='Enter'){addMTag(this,'q');event.preventDefault();}">
+        <div class="mtags" id="mtags-q"></div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0">
+      <label>有效卡牌組合</label>
+      <div class="mtag-box">
+        <input type="text" class="mtag-input" placeholder="描述組合，按 Enter" onkeydown="if(event.key==='Enter'){addMTag(this,'combo');event.preventDefault();}">
+        <div class="mtags" id="mtags-combo"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="cardPickerModal">
+  <div class="modal-content">
+    <div class="modal-header"><div class="modal-title">選擇牌卡</div><button class="modal-close" onclick="closeCardPicker()">×</button></div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchPickerTab('image')">圖卡 (88)</button>
+      <button class="modal-tab" onclick="switchPickerTab('word')">字卡 (88+2)</button>
+    </div>
+    <div class="modal-search"><input type="text" id="cardSearchInput" placeholder="搜尋（圖卡：關鍵字；字卡：輸入「誇」→誇贊）..." oninput="filterCards(this.value)"></div>
+    <div class="modal-body">
+      <div class="card-grid" id="pickerCardGrid"></div>
+      <div id="pickerWordList" style="display:none;">
+        <div class="word-list" id="wordChipList"></div>
+        <div class="free-word-box">
+          <label>個案自創字卡</label>
+          <div class="hint">客戶自己想的字（只屬這局，不會加入 88 張字卡庫）</div>
+          <div class="custom-word-input"><input type="text" id="customWordInput" placeholder="例：自由飛翔"><button onclick="addFreeWord()">加入本局</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// OH Studio — Card Database (88 image cards)
+// Extracted from Judy's card browser. Images hosted on Google Drive.
+
+const FILE_IDS = {
+  '01':'1p6TZe_4t5BIUz787AIBJi8bm_5_AdpOp','02':'18tp8Lmf2ilYQ-0YJmLA0F0awbP_BZVAQ',
+  '03':'1ZOZInwgR9rBfCVRahRy3lgTv0gnlHpjo','04':'1lAQouDBgp6Lbn1JOynU8uoU0bFY4XYKS',
+  '05':'1kqnY0kck1VGL-wRpIbCOhYWDNt2A4_KQ','06':'1odNdsfNRAVOlgSJZfYFNT9_pQ-pzGA1b',
+  '07':'1YP4kYcIdJV9_QUjqAY8whs93XQS2yxgf','08':'1VwThpd8rh4hgDqEoED8gPOUrWna_FZc-',
+  '09':'1kJaApAOBckPrjV8hq3gGvZZODIg0Y5CN','10':'1up9DAMQ1Kol6oXEnab24kMl8Y0hIGFhU',
+  '11':'1qgcTVupzML9-EgWoSTc_vVR0Sfdci2kC','11b':'1KlsFWcbaYoeKxsASP-4zRPC9iF6Z9wT3',
+  '12':'1c4510JEu4VxXFK-YJR3SqqXZSJUsOOr1','12b':'1t8ObPEy3zhLmpJoV5HmuedHMoBsW3LC6',
+  '13':'1PnWZVBbZ0ayDj_UZ5tjTXAmk_hTZEN-s','14':'1AIBsJhoOjUWRCbSi_KkQMg3pv7-LYgwO',
+  '15':'1mT_OthJqGdz2vYqh4TEEheAhtOvx6Tnm','16':'1ei8CgVV7DprnCSxt4JihuFNxdPNB7OFF',
+  '17':'1zAfHqnAuKduAIWcBqnKJF-_TqlTote7N','17b':'11pC4pp--3PMJ_yZJID0Fn1IYgo2_KcPf',
+  '18':'1K25lIrtVYK3V7yol6cWxYGP5E8euuoS9','18b':'11IO4EaIAXvoa77P84DAQkDNBB6ycOJvJ',
+  '19':'1nr8VE9ULldgNH4UP7-QwHmuR-gQwqkWy','20':'1wYMpeN1fH1zKY2GkEk_xw4Hj-GFrtz4b',
+  '21':'1mOYJx-K12Eg-nM290fvwbsiZRXAwzi_s','22':'1swvE_o82jToFo-oSO50MoPcwI8dR7eYe',
+  '23':'1Le2MoknwLPfqcPAWiERmuSZ6TobG9-89','24':'124e_n0YmCcRZK6A2RUoFd-4jkOXYhwZs',
+  '25':'1qHGtQtI43ABw_dWc6SEZIkaQ1rvgzSLn','26':'14rHe_Tr2iz1Uy1YTOUT7iYnK0itPBF3Z',
+  '27':'1AWAuLXozNHfpmp1Xp3aVBiu_wyydve8z','28':'1ugyDT880kd23GNYgdLGuBM0QdgPZ197M',
+  '29':'1JDCmB9e9Z1RiRluZ-8mPsprpCnEfNmnn','30':'1-Ey9vG3-zH_GxEQ1Gjpo4Qp58tZVpqu-',
+  '31':'1fjHaceF4_F_d7qj5Jhu5fvRQh_ep3z92','32':'1FkJAx_BsO3AHU2MdcZ7tezmuQtzOM1OZ',
+  '33':'1vkeE6_l45ivu3yhS2zmSxEgdQWq_LsiS','34':'1_IUo0tFADQon8WVHCDzGseEfFob9dOEz',
+  '35':'12jPGV3lqhLUbehgw2tNQz7C7-wkEuzM8','36':'146rFSQcEOXrGzHUI4og4IJHZbJrJvF1R',
+  '37':'1Gw7IjV7or_mcRoyMKERCCZwwKEPiy1fl','38':'1yg2k-0IkbcegN8C8TpRQDiCE9gBP7Fzr',
+  '39':'1COmDfhUcAcHRKsfSSVFgC8tI6PNCc22f','40':'1AjLapV4iO8pRdHKntQkg2owIxyT-Ro9n',
+  '41':'1Oa2y49gSPGiOx4O6Gl-0ReGenpg1Cu_V','42':'1pC0CTKTuTWyPfjYXWLXzTjfW3H8j8C-f',
+  '43':'1L1m1hZFhFgtF9bLr_hp3ASN2zGbScuHy','44':'1slSXVnjP-VctPDdKGHSZcqVtj-ecgK8M',
+  '45':'1Ba1UPulpGChCy3WpIVBu_VEsug5PNuEN','46':'1EID-hwZ5jRTPKz42row2T5yWgKXFm9fw',
+  '47':'1O1VhnfS-mLdHtoMgBtinhBQgWxFcW23K','48':'17oxXG7CMHavpvjmkkZdGcbEuVLKQnoT3',
+  '49':'1O6DZ4-iUhAxXExJFEefWq3jwcM2cpYEK','50':'1KnEPbLW3dHy5eUeUGSXJITi2cYP_LyLc',
+  '51':'197UdziN1lpJ8paDOWC7RjpP3oZ7Bb--b','52':'1Ppp_OHlk0ISr7GWfkk0IeovfjH2S80c7',
+  '53':'1P9KkoDY-hlRp_f-BeWlCAj0ATOFNXVNx','54':'19rfbmWmIzKA-yny5jx8Il_1SJftUyY2u',
+  '55':'16lmgTvTuwaD1nf6iQq5WTL3JYDBRvGDg','56':'143jMf841AxA6RUsdMNAQaeqOWP5Cn401',
+  '57':'1jFv9ZMrM6pQAv0y2iQxorTDKtAT1f2uh','58':'1c-OEhgEJW0KC2qulpM6uBUaKJP4VrRut',
+  '59':'1Zc6o9E-Bxri1lHQsueeqzDjBYPwv2IMb','60':'1k4d9iCeYg3YjzWIy2DVserWTNpp8nDLa',
+  '61':'1wEabW_Nhp52wg41c1zoCCaRZDwqZb0vt','62':'19TMeFdXqOtlA_o_2LiNL9WIIrOXUppNa',
+  '63':'1v4UJxTXxbd4zmDcGUIrfxLRWc5eafmb8','64':'1Y1OBYFR1aQaFjYSVhG-im4_OiLjOPjHI',
+  '65':'1_6UMxQeGxKC408YhIwYL3iOWcn-F-hC5','66':'1Zzzg5bActwnj5Uy5wEwLjbJPVYVuLeg-',
+  '67':'1Hnsbp6UW8bE4qehFgRrAAAu6o4tUnUrB','68':'1Aym54HJZ9tYnNh7Q4NimsnabRlC75kdY',
+  '69':'1MxvH27iw3yuwHEmIdA1rHLRxyVIlgHJr','70':'1hNCwWs906kLkZontL0deM1AjuX559OQf',
+  '71':'10bm27vxbL4AHG8arsRG5u5MPCzX736KR','72':'1l2soSiiH_YGR94xe80nbm3PhMXBhSxOI',
+  '73':'1pxIKS1LbRvkc7dmICZn9IdwcKTdn3j5Q','74':'1icISkEPQ3mbl2PKaUiA3-nR417MsdWdp',
+  '75':'13pGe6U4myLmEc2La6rSCG3EBoRwA8CXM','76':'1KOEmSrmEFdhhPcMK2CehI_dH98X4w80R',
+  '77':'1wy-puKfrJwgeV3mn53N7ZhuKD-soxZat','78':'1gBa-lZxf656qSLdsec-jncgi6hYKziRp',
+  '79':'1tW9p4RhzeMWqaZapzPTxmYD_zWlcjILJ','80':'1HJUgCKoVvviiEq1aLHcks8wwFq7B-bD-',
+  '81':'1jA0e-CKgL9w0FPSTmFEA1ZuOyx0SVWu9','82':'1MZHER8mTIJzJWHTImxQJirDsigVA7eRQ',
+  '83':'1-Q_tQpEpmajPD-PyB93K4eeyRswjoxL1','84':'103mKAx9Z1tdjMQ2jsVAlnwS_oRJ9ZzSA',
+  '85':'1ITH-zoYjOxkyk6bO14v6LjuinxQWy_KV','86':'1-9gNm7-jaJrJMW6mR-3HVm34wpY4d_ja',
+  '87':'18er1lQaDXm8lnUsjgPTxrlBeJVwXNm2L','88':'1aRM6Nocr_XAkuAHclRs7GpH5paB7OlZl',
+};
+
+const KEYWORDS = {
+  1:{pos:'結實、穩扎穩打、團結、齊力斷金、不動搖、勢均力敵',neg:'拉鋸、僵持不下、角力、解鈴還需繫鈴人、束縛、糾結',sub:'不放手、勉強迫感、拉扯的力量、競爭的感覺、扭轉的力量',visual:'兩隻手各拿著繩結兩端拉扯，背景鮮黃，像是拔河或角力的拉鋸',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？\n兩手的力量有多大？(1-10，10最大)\n兩手是如何動作的？\n你在裡面嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的色彩感覺如何？明亮度是多少？(1-10，10最亮)',posLang:'凝聚、團結、調整、合作、共識、同心、協力',negLang:'緊張、壓力、扭曲、粗糙、阻力、角力、憤怒、不妥協'},
+  2:{pos:'神通廣大、無所不能、勇往直前、引領者、衝勁、領頭羊、前進',neg:'自滿、過於樂觀、思慮不周、直線條',sub:'光與暗、充滿力量、指引方向、先鋒/帶領者、期待/擁有正義',visual:'一人披斗篷背對站立，右臂高舉黃光，背景朱紅，像是巫師施法或超人飛翔',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n你覺得這是什麼樣的人？\n他的手上是什麼？明亮度有多少？(1-10，10最亮)\n你在裡面嗎？\n背景顏色有意義嗎？溫暖程度如何？(1-10，10最熱)\n整張圖感覺在什麼地方？',posLang:'領導、勇敢、革新、效益、信心、英雄、救世主、希望、活力、自信、奔放、熱情、勝利、自由',negLang:'任性、衝動、盲從、造反、顛覆、怒氣、異想天開、裝扮、開戰、抗議、獨裁、吶喊、憤怒、無法掌控'},
+  3:{pos:'守時、規劃計畫、按表操課、紀律、準備、經年累月',neg:'曠日費時、精算、計較、沉沒成本、拖延',sub:'焦慮、鐘錶必較、按部就班、急迫的時間、時間的壓迫感',visual:'一本月曆攤開在桌上，旁邊有一隻手錶，背景灰藍，像是在計畫或倒數時間',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？有情緒嗎？\n誰的手？\n手錶轉動的速度如何？(1-10，10最快)\n看到圖是否聯想到最近有過類似的事件或感受嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的色彩感覺如何？明亮度是多少？(1-10，10最亮)',posLang:'規律嚴謹、按部就班、守時自律、分秒必爭、使命必達',negLang:'壓迫感、無法變通、懶緩、曠日費時、懶散、僵化'},
+  4:{pos:'打掉重練、破斧沉舟、破罐破摔、發洩、無心之過',neg:'故意為之、粗心大意、粗手粗腳、忽略、疏忽、浪費、功虧一簣',sub:'打破杯子、水往下流、雙手緊張、面對意外或事故、衝突的狀態',visual:'一隻手打翻杯子，水灑落在桌面上，旁邊另一隻手攤平，灰藍色調，像是意外或失誤的瞬間',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？有情緒嗎？\n兩手緊張程度是多少？(1-10，10最緊張)\n你覺得這雙手接下來會做什麼？\n水流速度有多快？(1-10，10最快)\n你在裡面嗎？\n整張圖的色彩感覺如何？明亮度是多少？(1-10，10最亮)',posLang:'提醒訊號、打破僵局、破除舊習、快速反應、危機處理',negLang:'懊惱、自責、抱怨、壞事、慌亂、大意、衝突、意外、危險、驚慌'},
+  5:{pos:'同理、推己及人、撫慰、深入懇談、知人善用、循循善誘',neg:'同情、無動於衷、自怨自艾、憂愁、慮病、舊事重提、翻舊帳',sub:'傾聽者或傾訴者、面對心事的整理、人我關係的投射',visual:'兩位老人並肩坐在公園長椅上，背景綠地，像是悠閒談天的老友',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？\n圖片中兩人是什麼關係？他們的表情是什麼？\n他們在什麼環境裡？圖框外還會有些什麼？\n你在裡面嗎？\n整張圖的光線如何？(1-10，10最亮)\n整張圖的色彩感覺如何？溫度是多少？(1-10，10最熱)',posLang:'輕鬆自在、閒情逸致、含情脈脈、靜靜陪伴、老來伴、活在當下',negLang:'孤老無助、擔憂沈默、悲傷、冷漠、隔離、沈默無語'},
+  6:{pos:'據理力爭、集會、團結一心、志向遠大、一呼百應',neg:'壯志未酬、理想主義、戰爭、抗爭、紛爭、打架、鬥爭',sub:'面對的問題、期待些什麼、團隊中的角色',visual:'一群人舉著紅色旗幟和標語走在街上，像是示威遊行或集會抗爭',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？有情緒嗎？\n感覺圖片音量的大小？(1-10，10最大)\n人群裡，你曾在哪裡？為什麼？\n圖片中的陽光大小？(1-10，10最大)\n圖片中的溫度如何？(1-10，10最熱)\n背景顏色有意義嗎？為什麼？',posLang:'歡迎列隊、團結一致、熱情歡呼、理性訴求',negLang:'據理抗爭、無法溝通、惡民怨、聚眾滋事'},
+  7:{pos:'財富、資源、物質、流通、節儉',neg:'一毛不拔、吝嗇',sub:'錢的厚度、捲錢的手',visual:'一隻手拿著一疊鈔票，背景灰白，像是數錢或交易的動作',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩手的力量有多大？(1-10，10最大)\n你是在裡面動作的嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的色彩感覺如何？明亮度是多少？(1-10，10最亮)',posLang:'手頭寬裕、獲利不少、資源豐富、自給自足',negLang:'過路財神、資源不足、守財奴、分配不均'},
+  8:{pos:'公平、分配、平均、平衡',neg:'零和遊戲、賭博、投機取巧',sub:'掌握牌、預測意味、主動/被動、出牌、開牌',visual:'兩隻手在桌面排列藍色卡片或紙條，黃色背景，像是占卜或排陣',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n出牌的速度是？(1-10，10最快)\n出牌順序如何？\n誰的手？\n背景顏色有意義嗎？為什麼？\n整張圖的色彩感覺如何？明亮度是多少？(1-10，10最亮)',posLang:'掌握方向、主導權(發牌者)、偷稅探索、面對未知的希望感',negLang:'猶豫不決、舉棋不定、惶惶不安、畏縮、恐懼未知'},
+  9:{pos:'敞開自我、順從本能、真實的自己、開放、慾望',neg:'過度袒露、赤裸、肉慾的',sub:'真實的抒發、無私的給予、探索個性/感情的書法',visual:'兩個赤裸人形交疊擁抱，紅色背景，像是激烈的肢體糾纏或親密接觸',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n圖片中的姿勢，感覺如何？\n空間明亮度如何？(1-10，10最亮)\n溫度如何？(1-10，10最熱)\n圖片中，你會在什麼位置？有聲音嗎？\n背景顏色感覺如何？為什麼？',posLang:'自信開放、真實呈現、放鬆自在、沒有掩飾、享受自我',negLang:'衣不蔽體、毫無羞恥、恣意放縱、我行我素、無視他人存在'},
+  10:{pos:'未知的自己、敏銳、覺察',neg:'小人、陰暗面、未知的問題、盲點、有眼無珠',sub:'預謀探索、不光明面、不舒服的觀察、不舒服的被關注',visual:'一張陰暗臉孔露出兩顆發光的黃色眼睛，紫黑背景，像是潛伏的怪物或暗處的窺視者',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n黑色的人在做什麼？\n黃色的眼睛有意義嗎？眼睛亮度有多少？(1-10，10最亮)\n你在哪裡？\n這是什麼空間？空間明亮度？(1-10，10最亮)\n圖卡聯想到什麼不舒服的事？',posLang:'洞察力、非常專注、眼光獨到、炯炯有神、人間清醒',negLang:'心生畏懼、偷窺、居心叵測、偷偷摸摸、不正當'},
+  11:{pos:'扶持、照顧、母系社會',neg:'處罰、狹持、媽寶、陽奉陰違',sub:'愛的溫馨對話、被控制/約束',visual:'一名婦人摟著小孩站立，深藍背景，像是母子相依',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩手抓在肩膀的力量有多大？(1-10，10最大)\n小孩的手是什麼感覺？為什麼？\n圖片中有你嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的色彩感覺如何？明亮度是多少？(1-10，10最亮)',posLang:'緊緊擁抱、溫柔支持、關愛有加、安撫教導',negLang:'嚴厲責備、訓誡警告、掌控欲、碎碎念'},
+  12:{pos:'助人、保護、介入、覺察',neg:'遏止、強制、掙扎、抗拒',sub:'痛苦的深淵、顫抖的壓迫感、壓制無法動彈、強大的控制欲、強而有力的支持',visual:'兩人並肩坐在吧台前，背對鏡頭，像是在咖啡廳或酒吧聊天',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n被抓的手，力道如何？(1-10，10最大)\n抓人的手？\n有你的手嗎？為什麼？\n背景顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'拯救力量、掌控能力、關懷熱情、保護救援',negLang:'操控約束、強迫壓制、衝突感、水深火熱'},
+  13:{pos:'抒發、情感宣洩、調頻、琴瑟和鳴、自得其樂',neg:'借題發揮、過度沉浸在自己的世界、宅、舒適圈、安於現況',sub:'專注當下、只關注眼前、靜態放鬆感、自娛娛人的狀態',visual:'一人在暖色背景前彈吉他，紅紫色調，像是街頭藝人演奏',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？有聲音嗎？\n兩手的力量有多大？(1-10，10最大)\n兩手是如何動作的？\n你在裡面嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的色彩感覺如何？(1-10，10最大)',posLang:'自娛娛人、沈浸愉悅、享受樂趣、和諧熱情、創造喜樂',negLang:'孤芳自賞、無視他人、自以為是'},
+  14:{pos:'深度連結、洗牌、順應自然、臣服',neg:'摧毀、不可抗力、無制序、捲入',sub:'內縮或擴展、無解的漩渦、不斷循環的狀態、捲入煩惱的事件',visual:'一個藍綠色漩渦盤旋於夜空草地之上，像是颶風或能量黑洞',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n漩渦速度有多快？(1-10，10最快)\n漩渦方向是怎麼轉？有何感覺？\n旁邊的黃色區塊，有意義嗎？\n整張圖的色彩感覺如何？明亮度是多少？(1-10，10最亮)',posLang:'向心力、強大吸引力、核心焦點、轉變、運轉',negLang:'堂局者迷、陷入困境、深不可測、暈頭轉向、漩渦擴大影響'},
+  15:{pos:'勤勞、耕種、制序',neg:'辛苦、負擔、勞力、不得不做、限制',sub:'困頓、沈重感、無力感、暫時的休息、沒有想法/方向',visual:'一隻驢子站在淡藍背景前，像是孤單佇立的牲畜',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n低頭的驢子在幹嘛？\n畫面中的溫度有多少？(1-10，10最熱)\n你在畫面裡的哪個位置？\n背景顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'任重道遠、忙裡偷閒、心甘情願、盡忠職守、無怨無悔、吃得苦中苦',negLang:'停滯不前、任人擺佈、自不量力、沈重壓力、疲倦不堪、沒有主見'},
+  16:{pos:'魔術方塊、重組、未知、無限創造、創意、飛越、飛昇、跳躍、矩陣',neg:'迷惑、井底之蛙、侷限、自閉、鑽牛角尖',sub:'表面、裡面、裝箱、被限制/約束',visual:'一個綠黃格紋棋盤上立著灰色立體方塊，像是棋局或抽象迷宮，有個木箱。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n盒子底部黑色，會有什麼感覺？\n方格子的地方有什麼感覺？\n圖中你會選擇站在哪裡？\n背景顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'獨特、規規矩矩、多元空間、安全感',negLang:'自我設限、隱藏躲避、暗無天日、矩陣的約束感'},
+  17:{pos:'三人行必有我師、同肩併濟、同伴、合作、一同、家族旅行',neg:'背對目標、盲從',sub:'期待的方向、不同角色、不同心情',visual:'三個孩子並肩站在街角望向同一方向，藍灰背景，像是等待或圍觀',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n並肩三人的背影，分別感覺如何？\n他們在什麼地方？光線如何？(1-10，10最亮)\n你在裡面嗎？\n圖片中顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'團結力量大、齊心一致、相同目標、結伴同行',negLang:'相依為命、沈默無語、窒礙難行、舉步維艱'},
+  18:{pos:'前途無量、目標明確、步步高升、心之所向',neg:'步履蹣跚、疲累不堪、遙不可及、迷宮及、路途的壓迫感',sub:'希望感/指引感、滿載期待的目標、探索未知的方向、、Based on the images provided, here is a compilation of the content for each card from 019 to 028.',visual:'一道白色階梯通往紫色牆面的金色門口，像是通往神秘殿堂的路徑',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n樓梯是向上？還是向下？\n門中的光線有多強？(1-10，10最強)\n你在哪裡？\n牆面顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'前途無量、目標明確、步步高升、心之所向',negLang:'步履蹣跚、疲累不堪、遙不可及、迷宮及、路途的壓迫感'},
+  19:{pos:'清新舒爽、獨處自在、寧靜感、一絲不苟',neg:'無菌隔離、孤單感、單調無趣',sub:'佔比率、受限的空間、功能的單一性',visual:'一張綠色床鋪放在臥室裡，旁邊有檯燈，像是簡單樸素的房間一角',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n綠色的床是什麼感覺？你會如何應用？\n室內光線如何？(1-10，10最亮)\n室內溫度如何？(1-10，10最熱)\n這個空間對你來說有何意義？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'清新舒爽、獨處自在、寧靜感、一絲不苟',negLang:'無菌隔離、孤單感、單調無趣'},
+  20:{pos:'頂天立地、一支獨秀、姻緣一線、難分難捨',neg:'一意孤行、桎梏繩索、喘不過氣、不自由',sub:'約束/固定、無法動彈、動彈不得/有方向性',visual:'一根木柱被黑色繩索層層纏繞，淺褐背景，像是被綁縛固定的柱子',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n柱子與繩子的感覺如何？\n繩子有力緊嗎？(1-10，10最大)\n圖片中你在什麼位置？\n背景顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'頂天立地、一支獨秀、姻緣一線、難分難捨',negLang:'一意孤行、桎梏繩索、喘不過氣、不自由'},
+  21:{pos:'享受獨處、氣氛悠閒、自在放鬆、滿足感',neg:'孤僻傲慢、不合群、隔牆有耳、孤芳自賞、落寞感',sub:'有心事、人我之間的關係、放鬆程度/沮喪程度',visual:'兩人並肩坐在吧台椅上，望向前方的牆面，像是排隊等候或專注聆聽。一個人喝酒，另一邊酒保在和客人聊天。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n三人之間的關係是什麼？有聲音嗎？\n一個人坐在哪裡幹嘛？感覺如何？\n你在裡面嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'享受獨處、氣氛悠閒、自在放鬆、滿足感',negLang:'孤僻傲慢、不合群、隔牆有耳、孤芳自賞、落寞感'},
+  22:{pos:'開啟契機、門後有驚喜、解鎖、希望感、新世界',neg:'手握把柄、刺探隱私、焦慮感、偷窺',sub:'開啟/關上、未知/偷窺、機會/選擇',visual:'一隻手拿著鑰匙，要打開門。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n持鑰匙的手，打開速度是什麼？(1-10，10最快)\n開啟後，感覺門的另一端會有什麼？\n你在哪面嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的明亮度是多少？(1-10，10最亮)',posLang:'開啟契機、門後有驚喜、解鎖、希望感、新世界',negLang:'手握把柄、刺探隱私、焦慮感、偷窺'},
+  23:{pos:'寧靜致遠、享受寧靜、低調行事、不急不徐',neg:'孤獨無助、停止不前、遙望遠方、落寞徬徨、寂寞悲傷',sub:'孤獨/恬淡、空白/靜默、等待、有情緒/沒情緒',visual:'一人站在深藍門框前望著窗外景色，像是凝望遠方沉思',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n一個人站在哪裡？看向什麼地方？\n室內光線如何？(1-10，10最亮)窗外有什麼？\n你在哪裡面嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'寧靜致遠、享受寧靜、低調行事、不急不徐',negLang:'孤獨無助、停止不前、遙望遠方、落寞徬徨、寂寞悲傷'},
+  24:{pos:'閒適自由、隨性自在、有規矩、耐心順從、無拘無束',neg:'制約與限制、框架、單調無趣',sub:'被期待信任程度、被限制/焦慮感、身心和一的表現',visual:'木製圍欄圍住一片白色區域，背後是綠色山丘，像是牧場或農地的柵欄，好像有羊。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n羊群的方向是什麼？有何感覺？\n牧羊人的感覺如何？\n太陽的光線指數？(1-10，10最亮)\n你在哪裡？\n柵欄裡的羊是什麼感覺？為什麼？\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'閒適自由、隨性自在、有規矩、耐心順從、無拘無束',negLang:'制約與限制、框架、單調無趣'},
+  25:{pos:'無私母愛、慈愛滋養、寶貝呵護、血脈相連、專注眼前',neg:'目光如豆、淡薄感情、獨佔擁有',sub:'壓力/無力、被照顧、被期待、給予/掠奪的深度',visual:'一位母親低頭哺乳懷中嬰兒，藍紫色背景，像是溫柔的母子情',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n母親/嬰兒的表情是什麼？為什麼？\n抱著孩子的力量有多少？(1-10，10最大)\n你是哪一個？\n空間的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'無私母愛、慈愛滋養、寶貝呵護、血脈相連、專注眼前',negLang:'目光如豆、淡薄感情、獨佔擁有'},
+  26:{pos:'康復療養、妥善照料、捐血救人、死而無憾、放鬆釋放',neg:'性命垂危、虛弱無力、悶鬱樂生不如死',sub:'情緒的宣洩、生命的課題、反向現實/身心不平衡',visual:'一人躺在病床上打點滴，淡綠背景，像是住院休養的病人',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n病人的表情如何？為什麼？\n點滴有意義嗎？為什麼？\n你在哪裡？有聲音嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'康復療養、妥善照料、捐血救人、死而無憾、放鬆釋放',negLang:'性命垂危、虛弱無力、悶鬱樂生不如死'},
+  27:{pos:'恪盡職守、嚴加戒備、安全範圍、守護家園、權勢滔天、伺機而動',neg:'心生畏懼、危機四伏、自我防衛、不容靠近、怒吼恐嚇',sub:'對抗時的態度、隱藏著什麼、守護/探險著什麼',visual:'一隻黃色大貓張嘴露牙站在山谷間，像是兇猛的獅子或野獸現身',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n猛獸的表情是什麼？為什麼？\n後面的洞穴是什麼？\n你在哪裡？有聲音嗎？\n背景顏色有意義嗎？為什麼？\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'恪盡職守、嚴加戒備、安全範圍、守護家園、權勢滔天、伺機而動',negLang:'心生畏懼、危機四伏、自我防衛、不容靠近、怒吼恐嚇'},
+  28:{pos:'凝聚、團結、調整、合作、共識、同心、協力',neg:'緊張、壓力、扭曲、粗糙、阻力、角力、憤怒、不妥協',sub:'一致性、多數傾向、訓練與經驗值、、Based on the images provided, here is a compilation of the content for each card from 029 to 038.',visual:'一列穿紅衣的隊伍持旗行進在道路上，灰紫色調，像是軍隊或儀仗隊遊行',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n隊伍的感覺如何？為什麼？\n畫面中有聲音嗎？聲音量如何？(1-10，10最大)\n你在哪裡？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'凝聚、團結、調整、合作、共識、同心、協力',negLang:'緊張、壓力、扭曲、粗糙、阻力、角力、憤怒、不妥協'},
+  29:{pos:'展翅高飛、鵬程萬里、無限希望、獨立自由、無拘無束',neg:'一意孤行、傲慢孤獨、任性妄為、高不勝寒、過度自我',sub:'目標清晰、嚮往的方向、無力感/無拘無束',visual:'一隻灰色海鳥展翅飛翔於淡藍天空，像是自由翱翔的鳥',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n鳥兒飛出框的速度？(1-10，10最快)\n鳥兒振翅的感覺？\n你在哪裡？有聲音嗎？音量如何？(1-10，10最大)\n天空明亮度如何？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'展翅高飛、鵬程萬里、無限希望、獨立自由、無拘無束',negLang:'一意孤行、傲慢孤獨、任性妄為、高不勝寒、過度自我'},
+  30:{pos:'齊心協力、心靈交流、神聖和平、相互理解、信任與支持',neg:'虛情假意、同溫層取暖、心口不一、互相箝制',sub:'合作/談判事宜、信任與神聖象徵、團隊一致/各有心思',visual:'兩位披深藍長袍的人並肩站立於拱門下，金黃光暈，像是莊嚴的祭司或修士',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人的互動如何？為什麼？\n兩人握手的力量如何？(1-10，10最大)\n兩人要去哪裡？你在哪裡？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'齊心協力、心靈交流、神聖和平、相互理解、信任與支持',negLang:'虛情假意、同溫層取暖、心口不一、互相箝制'},
+  31:{pos:'守口如瓶、撫慰呵護、給予關愛、沈思感',neg:'無顏見人、憤怒激動、自卑感、悲傷',sub:'有委屈、強烈情緒需要隱藏、需要被安撫/得到憐憫',visual:'一人雙手掩面、低頭遮臉，橙黃色背景，像是哭泣或羞愧',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n半張臉的表情如何？手放的目的是？(1-10，10最大)\n背景顏色有意義嗎？為什麼？\n周圍有聲音嗎？你在哪裡？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'守口如瓶、撫慰呵護、給予關愛、沈思感',negLang:'無顏見人、憤怒激動、自卑感、悲傷'},
+  32:{pos:'穩如泰山、整齊清潔、認真負責、有條有理、掌控感好',neg:'一事無成、毫無感情、公事公辦、呆板',sub:'被制約的程度、固定的模式/行動、決定的態度與細節',visual:'一個空間俯視圖，桌椅文件散落，灰藍色調，像是凌亂的辦公室',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n辦公室是誰的？桌面的感覺如何？\n前方小房間是幹嘛的？有意義嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'穩如泰山、整齊清潔、認真負責、有條有理、掌控感好',negLang:'一事無成、毫無感情、公事公辦、呆板'},
+  33:{pos:'生機盎然、團結努力、合作無間、生生不息、資源豐盛',neg:'無頭蒼蠅、焦頭爛額、心神不寧、多頭馬車、不知所措、急躁不安',sub:'集中或獨立、亂中有序/警報失靈、煩躁不安/不知所措、無頭蒼蠅/屹立不搖',visual:'草地上一棵樹下密布許多黑色小螞蟻般的圖案，像是螞蟻雄兵或蜂群湧動',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n螞蟻的感覺是什麼？有方向嗎？\n螞蟻與樹的距離是？(1-10，10最遠)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'生機盎然、團結努力、合作無間、生生不息、資源豐盛',negLang:'無頭蒼蠅、焦頭爛額、心神不寧、多頭馬車、不知所措、急躁不安'},
+  34:{pos:'風平浪靜、無邊無際、心曠神怡、浩瀚無邊、寬廣遼闊、碧海藍天',neg:'空空蕩蕩、心如止水、沒有邊界感、無關無浪(無趣)',sub:'孤獨明亮、空白與廣闊、生命與虛無間',visual:'一片沙灘延伸向海，藍天白雲，像是寧靜空曠的海岸線',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n海與小土坡的關係是什麼？感覺如何？\n高聳的樹是什麼感覺？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'風平浪靜、無邊無際、心曠神怡、浩瀚無邊、寬廣遼闊、碧海藍天',negLang:'空空蕩蕩、心如止水、沒有邊界感、無關無浪(無趣)'},
+  35:{pos:'精打細算、掌握精準、專業感、一切就緒、計劃縝密',neg:'吹毛求疵、不知變通、得寸進尺、斤斤計較、算計威、墨守成規',sub:'權利欲、算錯/算對、無組織/規律感、準確的精準/落後的焦慮',visual:'一隻手拿著尺對著畫了紅色折線的方格紙，像是繪製分析圖表',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n手握尺的力道有多少大？(1-10，10最大)\n手握尺的波動有意義嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'精打細算、掌握精準、專業感、一切就緒、計劃縝密',negLang:'吹毛求疵、不知變通、得寸進尺、斤斤計較、算計威、墨守成規'},
+  36:{pos:'奮力一擊、勇敢突破、醍醐灌頂、勇於挑戰、破除框架、力求革新',neg:'強行破局、蠻橫霸道、強大壓力、激烈衝突',sub:'受阻的壓力、在框架內、對現實的衝撞與決定',visual:'黑白條紋背景中一支畫筆沾著鮮紅顏料，像是強烈情緒的藝術創作',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n繩子放下的速度是如何？(1-10，10最快)\n繩子握緊的力量是多少？(1-10，10最大)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'奮力一擊、勇敢突破、醍醐灌頂、勇於挑戰、破除框架、力求革新',negLang:'強行破局、蠻橫霸道、強大壓力、激烈衝突'},
+  37:{pos:'互道珍重、彼此祝福、告別前進',neg:'錯過彼此、離情依依、不捨之情、別離難',sub:'情緒的表現、劃線的程度、顯得傷感的提醒',visual:'兩個藍色的人，隔著公車窗揮手道別，綠色公車背景，像是離別的瞬間',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人揮手的表情如何？為什麼？\n車子移動的速度如何？(1-10，10最快)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'互道珍重、彼此祝福、告別前進',negLang:'錯過彼此、離情依依、不捨之情、別離難'},
+  38:{pos:'雨過天晴、希望彩虹、細水長流、美不勝收、全新的開始',neg:'遙遠的方向、偶發事件、曲折蜿蜒、有距離、遙不可及',sub:'展望未來的距離、美好的預兆、信心的傳遞、Based on the images provided, here is a compilation of the content for each card from 039 to 048.',visual:'一道彩虹橫跨綠色河谷上方的橋，像是雨後希望的象徵',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n彩虹與橋樑的距離？(1-10，10最遠)\n河流的走向如何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'雨過天晴、希望彩虹、細水長流、美不勝收、全新的開始',negLang:'遙遠的方向、偶發事件、曲折蜿蜒、有距離、遙不可及'},
+  39:{pos:'心曠神怡、充滿希望、和煦陽光、熱情明亮、前途無量、獨當一面',neg:'非常炎熱、高高在上、各自為政',sub:'溫暖的/強烈的、和煦的陽光、光明的一面',visual:'一顆黃色太陽高掛在淡藍天空與綠色山丘之上，像是溫暖明亮的午後',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n太陽、天空與綠色之間的關係是什麼？\n太陽的光線有多強？(1-10，10最強)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'心曠神怡、充滿希望、和煦陽光、熱情明亮、前途無量、獨當一面',negLang:'非常炎熱、高高在上、各自為政'},
+  40:{pos:'停下思考、忍辱負重、調整休息、多元挑戰、谷底翻身',neg:'死路一條、困獸之鬥、甕中捉鱉、前途未卜、毫無出路',sub:'面對挫折/困境的思維、突破/跳脫、隱藏自己',visual:'一條巷子盡頭立著「DEAD END」死路標誌，灰褐背景，像是走入無路可走的死巷',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n黑牆的感覺是什麼？\n標語給你的感受是什麼？有意義嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'停下思考、忍辱負重、調整休息、多元挑戰、谷底翻身',negLang:'死路一條、困獸之鬥、甕中捉鱉、前途未卜、毫無出路'},
+  41:{pos:'自我陶醉、豪放不拘、大膽獨立、一派輕鬆',neg:'孤獨媚眾、毫不害羞、放蕩墮落、失去希望感',sub:'面對美好的態度、面對特殊/特別的景象',visual:'一人站在粉紅走廊望向打開的房門，門上寫著字，像是猶豫是否要進入。像是應召女郎，上面寫著hot',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n女人站在哪裡幹嘛？為什麼？\n她在哪個地方？旁邊有其他的東西/人嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'自我陶醉、豪放不拘、大膽獨立、一派輕鬆',negLang:'孤獨媚眾、毫不害羞、放蕩墮落、失去希望感'},
+  42:{pos:'神聖莊嚴、靈性目標、儀式感、寧靜真誠',neg:'怪力亂神、詭譎儀式、不真實、虛幻感、無法動彈',sub:'精神/信仰的提示、限制性信念/靈性指引',visual:'一本書放在藍色檯座上，上方懸浮著發光的星形圖騰，像是教堂神聖儀式或冥想象徵，又像是蛋糕。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n聖壇的感覺是什麼？光線的意圖是？(1-10，10最亮)\n看到圖片聯想到什麼樣的經驗？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'神聖莊嚴、靈性目標、儀式感、寧靜真誠',negLang:'怪力亂神、詭譎儀式、不真實、虛幻感、無法動彈'},
+  43:{pos:'相互依偎、海闊天空、關愛扶持、共同目標',neg:'臭味相投、糾纏不已、消極訴苦',sub:'需要陪伴/依靠、面對大面積/大局面',visual:'兩人背對站立望向海灘，一人藍衣一人綠衣，像是並肩看海的夥伴',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人依靠的感覺是什麼？緊密程度有多強？(1-10，10最強)\n依靠的傾向性(誰靠誰)？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'相互依偎、海闊天空、關愛扶持、共同目標',negLang:'臭味相投、糾纏不已、消極訴苦'},
+  44:{pos:'一路暢通、心胸開闊、無拘無束、綠意盎然、向前衝',neg:'不知進退、無視警告、危機四伏、不受控制',sub:'探測勇氣能力、決斷力的考驗',visual:'一個綠色交通號誌燈顯示綠燈「GO」，立於道路中央，像是前進的訊號',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n看到「GO」，是保持速限？還是踩油門？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'一路暢通、心胸開闊、無拘無束、綠意盎然、向前衝',negLang:'不知進退、無視警告、危機四伏、不受控制'},
+  45:{pos:'盡情玩耍、赤子之心、天真可愛、放鬆心情、毫無顧忌、單純有趣',neg:'吃著碗裡、看著鍋裡、任性隨意、自私自利',sub:'面對附近、投入的程度、放下/不放下',visual:'兩個孩子在公園玩滑梯與鞦韆，背景綠地，像是歡樂的遊樂場',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n溜滑梯與盪鞦韆的孩子，有何關係？\n他們在玩耍嗎？\n你在哪裡？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'盡情玩耍、赤子之心、天真可愛、放鬆心情、毫無顧忌、單純有趣',negLang:'吃著碗裡、看著鍋裡、任性隨意、自私自利'},
+  46:{pos:'搞怪、出人意表、戲謔、幽默、喜劇、荒謬、古怪',neg:'害怕、恐懼、憤怒、驚悚、失控',sub:'與期待不符、意料之外、強烈內在的記憶',visual:'一張驚恐睜大眼睛、張嘴吶喊的臉孔，紅色背景，像是極度驚嚇或吶喊',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n誇張的臉可能發生了什麼事？\n紅色彩帶有意義嗎？刺激指數有多少？(1-10，10最刺激)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'出乎意料之外、喜色於形、驚訝感、不可思議',negLang:'驚慌失措、無法言語、恐懼害怕'},
+  47:{pos:'痛改前非、痛定思痛、除舊佈新、下決心、捨得',neg:'一刀兩斷、斷尾求生、血腥暴力、自相殘殺、破壞',sub:'切除/斬斷、激烈的感受、決斷力的判斷',visual:'一隻手拿著斧頭砍向另一隻手。斷手，有血。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n斧頭砍下的力量與速度？(1-10，10最大、最快)\n兩隻手呢？有何感覺？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'痛改前非、痛定思痛、除舊佈新、下決心、捨得',negLang:'一刀兩斷、斷尾求生、血腥暴力、自相殘殺、破壞'},
+  48:{pos:'生氣盎然、資源旺盛、勢力範圍、深藏不露、無限生機',neg:'深不可測、眼前茫然、沒有方向感、藏污納垢、林中迷惘',sub:'深不可測、探索未知、象徵預測',visual:'一片茂密綠色樹林佔據整個畫面，像是深邃的森林',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n樹林走進去或嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10，10最亮)\n整張圖的溫度是多少？(1-10，10最熱)',posLang:'生氣盎然、資源旺盛、勢力範圍、深藏不露、無限生機',negLang:'深不可測、眼前茫然、沒有方向感、藏污納垢、林中迷惘'},
+  49:{pos:'諄諄教誨、細心傾聽、慈愛有加、放下身段',neg:'鄙視指責、高低強弱、尊卑有分、溝通不良',sub:'視角問題、敬仰/委身、嚴厲/溫暖方式 (對待)',visual:'一位大人蹲下，另一個人像小孩在說話、掙執或是在聊天。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人互動的姿態，分別為何？\n討論的聲音音量？(1-10, 10最大)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'諄諄教誨、細心傾聽、慈愛有加、放下身段',negLang:'鄙視指責、高低強弱、尊卑有分、溝通不良'},
+  50:{pos:'直腸子、一馬當先、意見領袖、權力象徵',neg:'一意孤行、唱反調、不聽使喚',sub:'引導方向、主導權力',visual:'一條黑色繩索或鞭子盤繞在紫色背景上，像是蜿蜒的鞭繩',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n鞭子方向為何？為什麼？\n鞭子移動速度為何？(1-10, 10最快)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'直腸子、一馬當先、意見領袖、權力象徵',negLang:'一意孤行、唱反調、不聽使喚'},
+  51:{pos:'靈活敏捷、自由擺動、深藏不露、守護神靈',neg:'陰險狡詐、狡猾多變、威脅恐嚇、冷血無情',sub:'警惕能力、變化/反應力度、覺察力/洞悉程度',visual:'一條蛇盤繞在黃綠色草叢間，像是潛伏在草地裡的蛇',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n蛇的移動速度為何？(1-10, 10最快)\n在草叢的感覺是？為什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'靈活敏捷、自由擺動、深藏不露、守護神靈',negLang:'陰險狡詐、狡猾多變、威脅恐嚇、冷血無情'},
+  52:{pos:'結伴同行、勇往直前、親密夥伴、散心郊遊、前途無量',neg:'窮途末路、氣氛凝結、漫無目標、窒礙難行、意見不合',sub:'主導權力、阻礙的事件、共同的目標方向',visual:'一人躺臥在床上望著窗外交通標誌，像是疲憊休息或失眠，路標是yield',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人相處的距離是？為什麼？\n空間感的感覺為何？為什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'結伴同行、勇往直前、親密夥伴、散心郊遊、前途無量',negLang:'窮途末路、氣氛凝結、漫無目標、窒礙難行、意見不合'},
+  53:{pos:'陽光普照、活力無限、風光明媚、自然循環、相互輝映',neg:'唯我獨尊、高低貴賤、(分別心)、孤芳自賞、無法移動',sub:'安全感距離、探索理想與美好',visual:'草地上一棵綠樹旁開著五朵紅花，像是寧靜的田園風景',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n花與樹之間的距離？(1-10, 10最遠)\n樹與花的互動為何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'陽光普照、活力無限、風光明媚、自然循環、相互輝映',negLang:'唯我獨尊、高低貴賤、(分別心)、孤芳自賞、無法移動'},
+  54:{pos:'升官發財、脫胎換骨、寧靜感',neg:'不祥預兆、陰森詭譎、無法逃脫、恐懼害怕',sub:'生命議題探討、面對事件的感受',visual:'一個沒有眼睛的灰白骷髏頭或是鬼，後面是墳墓，像是死亡或恐懼的具象化',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n群體在談論什麼？\n獨立的人想做？會靠近去嗎？速度？(1-10, 10最快)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'升官發財、脫胎換骨、寧靜感',negLang:'不祥預兆、陰森詭譎、無法逃脫、恐懼害怕'},
+  55:{pos:'互動交流、尊重彼此、期待參與、新契機',neg:'膽怯止步、排斥異己、搞小團體、孤立無援、心懷有鬼、八卦輿論',sub:'人我議題',visual:'四人並肩站立交談，旁邊有一人靠近觀看，藍綠背景，像是小團體討論',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n群體在談論什麼？\n獨立的人想做？會靠近去嗎？速度？(1-10, 10最快)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'互動交流、尊重彼此、期待參與、新契機',negLang:'膽怯止步、排斥異己、搞小團體、孤立無援、心懷有鬼、八卦輿論'},
+  56:{pos:'專業治療、安心傾訴、支持資源、關照身體、面對真相',neg:'面對不願的真相、無助焦慮、被掌控、惶惶不安',sub:'面對種種的感受、面對無法自控的感受',visual:'病人坐在旁交叉雙腿，醫生穿白袍打扮，像在看診中',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n面對醫生第一個感受是什麼？為什麼？\n病人和腳部的感受如何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'專業治療、安心傾訴、支持資源、關照身體、面對真相',negLang:'面對不願的真相、無助焦慮、被掌控、惶惶不安'},
+  57:{pos:'完全交付、開放自由、挺身而出、崇尚自由、權威感',neg:'毫無防備、不知羞恥、變態放縱、無所請、顏面掃地',sub:'力量/生命力、脆弱/性慾、面對赤裸裸的自己',visual:'一雙赤裸的腿被繩索或鏈條綁住，紅色背景，像是束縛或禁錮的意象。男生下體/祼露/祼體',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n裸露生殖器的感覺是什麼？\n手放在腿上有力量嗎？力量強弱？(1-10, 10最強)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'完全交付、開放自由、挺身而出、崇尚自由、權威感',negLang:'毫無防備、不知羞恥、變態放縱、無所請、顏面掃地'},
+  58:{pos:'一針見血、柳暗花明、意圖清晰',neg:'暗算偷襲、背後傷人、不光明磊落',sub:'既定的盲點、看不見的弱點、沒有思考周全的危機、、這是您提供的卡片內容整理：',visual:'綠色的人從背後拿刀刺向前面藍色的人，背對鏡頭，橙紅背景',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n拿刀的人適合情緒與感受？\n兩人可能的關係是什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'一針見血、柳暗花明、意圖清晰',negLang:'暗算偷襲、背後傷人、不光明磊落'},
+  59:{pos:'良性競爭、結伴同行、伯仲之間、步伐穩健向前',neg:'惡性競爭、猜忌、力不從心、沮喪',sub:'顯著/預設、解開心頭結、勇敢/不服輸',visual:'兩名穿背心的人在跑道上賽跑，綠色背景，像在田徑比賽。上面的背號是5及2',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人的速度如何？(1-10, 10最快)\n圖框外還有哪些什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'良性競爭、結伴同行、伯仲之間、步伐穩健向前',negLang:'惡性競爭、猜忌、力不從心、沮喪'},
+  60:{pos:'平衡潔淨、暢行無阻、陰陽協調、對稱感、自在流動',neg:'雙重壓力、狹隘點、兩面夾攻、對立感',sub:'近期關注事件的現況，壓力或焦慮感',visual:'一張幾乎全白的卡片，中央僅有兩條對稱曲線弧線與一個黑點，像是抽象的眼睛或極簡符號',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n點的感覺是什麼？為什麼？\n弧形是什麼感覺？為什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'平衡潔淨、暢行無阻、陰陽協調、對稱感、自在流動',negLang:'雙重壓力、狹隘點、兩面夾攻、對立感'},
+  61:{pos:'放鬆享受、洗滌塵埃、衛生乾淨、隱私空間、一塵不染',neg:'污穢潮濕、封閉空間、悶熱狹窄、沖刷污垢',sub:'環境上的需求、私密空間的感受、完美性格的呈現',visual:'一間綠色調浴室廁所場景，有浴缸與窗景，像是潔淨明亮的衛浴空間',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n潔淨浴室裡最想做什麼？\n窗台上的盆景有意義嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'放鬆享受、洗滌塵埃、衛生乾淨、隱私空間、一塵不染',negLang:'污穢潮濕、封閉空間、悶熱狹窄、沖刷污垢'},
+  62:{pos:'凝聚、團結、調整、合作、共識、同心、協力',neg:'緊張、壓力、扭曲、粗糙、阻力、角力、憤怒、不妥協',sub:'保護者、幫忙調整/有權力者、規則守護/強迫性信念',visual:'一名穿藍色制服的警察站在街上舉手敬禮或攔停，灰褐背景，像是執勤中的警員',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n警察臉部表情如何？\n周遭環境還有哪些什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'凝聚、團結、調整、合作、共識、同心、協力',negLang:'緊張、壓力、扭曲、粗糙、阻力、角力、憤怒、不妥協'},
+  63:{pos:'無限延伸、擴散能力、多元面向、包容度大',neg:'自我混亂、多重不安、模糊感、惶體籠罩、毫無方向',sub:'多層次的人格/念頭/想法/作為',visual:'一個剪影般的人形以紫紅漸層呈現，背景深藍，像是發光的人形輪廓',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n每個色階是否都帶有意義？是什麼？\n色階方向性是什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'無限延伸、擴散能力、多元面向、包容度大',negLang:'自我混亂、多重不安、模糊感、惶體籠罩、毫無方向'},
+  64:{pos:'細水長流、小心翼翼、分享給予、舒適感、不匱乏',neg:'揠苗助長、施壓力、強迫接受、努力不均',sub:'給予/接受、滋養/匱乏、資源的議題',visual:'一隻手倒水，從水瓶/水壺倒入玻璃杯中，藍色色調，像是倒水或斟酌的動作',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n水壺到水杯中的速度為何？(1-10, 10最快)\n海洋與水壺、水杯有關係嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'細水長流、小心翼翼、分享給予、舒適感、不匱乏',negLang:'揠苗助長、施壓力、強迫接受、努力不均'},
+  65:{pos:'善於表達、盡情發揮、審慎思考、擬定計畫',neg:'無從下筆、沒有思緒、舉棋不定、難以啟齒、猶豫不決',sub:'表達之門、掌控力之詞、意圖與決心程度',visual:'一隻手握著筆在書寫畫畫，土黃色調，像是專注寫字或記錄',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n牽筆的力量有多大？(1-10, 10最大)\n下筆的速度如何？(1-10, 10最快)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'善於表達、盡情發揮、審慎思考、擬定計畫',negLang:'無從下筆、沒有思緒、舉棋不定、難以啟齒、猶豫不決'},
+  66:{pos:'發奮圖強、積極向上、學習專注、集體共好、努力不懈、多元進取',neg:'呆板行事、不知變通、沈悶無趣、凝滯無助、匱乏不足',sub:'學習的議題、獲取資源的能力',visual:'圖書館裡幾個孩童坐在長桌前看書，背景書架，像是安靜的自習教室',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n這本書的意義是什麼？\n大畫書裡或書外是什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'發奮圖強、積極向上、學習專注、集體共好、努力不懈、多元進取',negLang:'呆板行事、不知變通、沈悶無趣、凝滯無助、匱乏不足'},
+  67:{pos:'開心圓滿、合作愉快、平衡和諧、其樂融融',neg:'爭奇鬥豔、相互牽制、互不相讓、燈紅酒綠',sub:'相互尊重/關懷、親密關係/個體相符、諧調關係/步調相同',visual:'兩人在黃綠色背景前手拉手轉圈跳舞，一紅一綠，像是歡樂共舞的夥伴',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n是誰帶動著誰？\n兩人表情如何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'開心圓滿、合作愉快、平衡和諧、其樂融融',negLang:'爭奇鬥豔、相互牽制、互不相讓、燈紅酒綠'},
+  68:{pos:'享受獨處、短暫休息、安全處所、保護',neg:'畏畏縮縮、無力感、害怕恐懼、自卑無助',sub:'內心深沉的威脅、自我束縛/阻礙協助',visual:'一個藍色的人蜷曲身體，縮在角落，躲在裡面',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n繩結的緊張程度？(1-10, 10最大)\n圖框外還有哪些什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'享受獨處、短暫休息、安全處所、保護',negLang:'畏畏縮縮、無力感、害怕恐懼、自卑無助'},
+  69:{pos:'享受獨處、短暫休息、安全處所、保護',neg:'畏畏縮縮、無力感、害怕恐懼、自卑無助',sub:'人際議題、面對同行、治癒有大創傷',visual:'兩人在路上一起往前走，像是在邊走路邊對話。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩個人走到哪裡？(1-10, 10最大)\n圖框外還有哪些什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'享受獨處、短暫休息、安全處所、保護',negLang:'畏畏縮縮、無力感、害怕恐懼、自卑無助'},
+  70:{pos:'無私播種、一份耕耘一份收穫、持之以恆、展望未來',neg:'遙遙無期、毫無生機、來日方長、徒勞無功、一事無成',sub:'前瞻未來、寫作的過程與感受、全心全意付出的提醒、、圖片提供了編號從071到082的卡片內容，現將其整理如下：',visual:'一名農夫穿藍衣在土黃色田地上彎腰勞作，黃綠背景，像是辛勤耕作的農夫',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n農夫播種的速度如何？(1-10, 10最快)\n田地範圍有多大？(1-10, 10最大)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'無私播種、一份耕耘一份收穫、持之以恆、展望未來',negLang:'遙遙無期、毫無生機、來日方長、徒勞無功、一事無成'},
+  71:{pos:'願者上鉤、觀察判斷、探索資源、目標多元',neg:'虎視眈眈、誘惑擺脫、左右為難',sub:'目標與危機、威脅/困境、觀察者/被觀察者',visual:'一個潛水員在藍色海域中，旁邊有三條魚，中間垂吊著一個魚鉤',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n潛水俠與鯊魚分別的距離？\n水裡壓力的感受？(1-10, 10最大)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'願者上鉤、觀察判斷、探索資源、目標多元',negLang:'虎視眈眈、誘惑擺脫、左右為難'},
+  72:{pos:'專業堅定、自我要求、愛心奉獻、耐心嚴謹、果斷',neg:'不苟言笑、冷漠無表情、疲憊不堪、不知變通',sub:'專業/熱忱態度、表面/內在一致性',visual:'一位穿白色制服的護士站立，黃綠背景，像是專業盡責的護理人員',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n騎士的表情與感受？\n空間裡還有哪些感受？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'專業堅定、自我要求、愛心奉獻、耐心嚴謹、果斷',negLang:'不苟言笑、冷漠無表情、疲憊不堪、不知變通'},
+  73:{pos:'星光璀璨、徐徐微風、寧靜感、珍惜美好、許願',neg:'月黑風高、孤獨感、晦暗不明、看不清方向',sub:'困境/黑暗間的揚棄程度',visual:'深藍夜空中懸著月亮與星星，下方是深色地面，像是寧靜星夜的景色',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n夜晚的明亮度是多少？(1-10, 10最亮)\n夜晚是什麼感覺？為什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'星光璀璨、徐徐微風、寧靜感、珍惜美好、許願',negLang:'月黑風高、孤獨感、晦暗不明、看不清方向'},
+  74:{pos:'享受美食、獨立自主、簡單充實、享受當下',neg:'孤獨感、不如預期、欲求不滿、空虛感',sub:'對待自己的傾向性',visual:'一張藍色餐盤擺在木桌上，俯視角度，像是準備用餐的桌面，有牛排肉、菜及刀叉還有椅子',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n餐盤的菜餚如何？\n除了用餐人，還會有其他人嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'享受美食、獨立自主、簡單充實、享受當下',negLang:'孤獨感、不如預期、欲求不滿、空虛感'},
+  75:{pos:'各奔前程、轉捩點、獨立自主、新起點、尊重彼此',neg:'疏離冷漠、不歡而散、意見不合、分道揚鑣、敵對',sub:'選擇/方向性、道路不同/心意如何',visual:'兩個穿藍衣的人分別走在岔路口/十字路口，兩個人分別走向不同的方向，有兩個箭頭指示。',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人分開的表情或感受是什麼？\n前面有意義嗎？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'各奔前程、轉捩點、獨立自主、新起點、尊重彼此',negLang:'疏離冷漠、不歡而散、意見不合、分道揚鑣、敵對'},
+  76:{pos:'和諧溫暖、放鬆沉澱、安全感',neg:'熱情不足、疲憊焦躁、平淡無趣',sub:'歸屬感的議題：物質/情感',visual:'壁爐裡燃燒著火焰，旁邊散落物品，兩張藍色椅子，暖色調，像是溫暖的家居一角',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n壁爐火有多大？(1-10, 10最大)\n地毯可以做些什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'和諧溫暖、放鬆沉澱、安全感',negLang:'熱情不足、疲憊焦躁、平淡無趣'},
+  77:{pos:'深情擁抱、互相支持、同理心',neg:'相互箝制、求助無門、傷心欲絕',sub:'相互擁抱、支持與力量、愛的流動',visual:'兩人緊緊擁抱在一起，一穿紅衣一穿綠衣，像是深情擁抱的伴侶',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人擁抱的緊密程度？(1-10, 10最緊)\n兩人表情分別是？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'深情擁抱、互相支持、同理心',negLang:'相互箝制、求助無門、傷心欲絕'},
+  78:{pos:'慢工出細活、與世無爭、勇敢向前、自在專注、前方無限遼闊',neg:'行動緩慢、孤軍奮鬥、猶豫不決、停滯不前、遙不可及',sub:'強度感、面對困難的挑戰、突破困境的動力、持久性的耐性',visual:'一隻棕色烏龜緩慢爬行於淺色沙地，像是悠然自得的烏龜，要走向海',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n烏龜走向大海的速度如何？(1-10, 10最快)\n烏龜到海的距離如何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'慢工出細活、與世無爭、勇敢向前、自在專注、前方無限遼闊',negLang:'行動緩慢、孤軍奮鬥、猶豫不決、停滯不前、遙不可及'},
+  79:{pos:'傳道解惑、敦敦教誨、認真學習、傳播知識、勤學向上',neg:'傳統權威、口沫橫飛、枯燥乏味、有距離感、(不親近)',sub:'老師/學習初心檢測',visual:'一人坐在教室講桌前，黃綠背景搭配黑板，像是老師授課的場景，下面有三位學生',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n老師上課的表情如何？\n學生上課的態度如何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'傳道解惑、敦敦教誨、認真學習、傳播知識、勤學向上',negLang:'傳統權威、口沫橫飛、枯燥乏味、有距離感、(不親近)'},
+  80:{pos:'手把手帶領、引導與陪伴、提攜、愉快跟隨前行',neg:'被牽著走、拉扯不清、無法掙脫、勢力不均衡、差距過大',sub:'人我互動感、被推動/被拉扯',visual:'一位穿綠衣的大人牽著穿紅衣的小孩走在路上，灰褐背景，像是父親帶著孩子散步',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩人表情與姿態如何？\n前進速度如何？(1-10, 10最快)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'手把手帶領、引導與陪伴、提攜、愉快跟隨前行',negLang:'被牽著走、拉扯不清、無法掙脫、勢力不均衡、差距過大'},
+  81:{pos:'和解調節、正義公正、公開審議、一線生機',neg:'百口莫辯、孤立無援、擅權壓力、一己承擔、多元壓力',sub:'嚴肅的議題、需要面對的爭議性',visual:'三位法官端坐審判台上，俯視站立的一人，紫褐背景，像是法庭審判的場景',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n法官的表情是甚麼？\n法官與被告的距離為何？(1-10, 10最遠)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'和解調節、正義公正、公開審議、一線生機',negLang:'百口莫辯、孤立無援、擅權壓力、一己承擔、多元壓力'},
+  82:{pos:'清淨心、明鏡映心、看清楚、自我覺察',neg:'孤芳自賞、視而不見、沒有自信',sub:'自我印象與態度、自我覺察/反省能力、、圖片提供了編號從083到088的卡片內容，現將其整理如下：',visual:'一隻手持鏡框圓形手鏡，鏡面映出藍色天空，紅綠對比背景，像是凝視鏡中倒影',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n鏡中看見的是什麼？\n手握鏡子的力量有多大？(1-10, 10最大)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'清淨心、明鏡映心、看清楚、自我覺察',negLang:'孤芳自賞、視而不見、沒有自信'},
+  83:{pos:'休息是為了走更長遠的路、美化行動、利益他人',neg:'過度依賴、劃除異己、孤軍奮戰',sub:'勞動/執行力現狀',visual:'一把鏟子靠在黃色牆邊，旁邊是綠色草地，像是農具靜置的角落',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n鏟子啟動速度為何？(1-10, 10最快)\n鏟子靠在牆壁的感覺如何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'休息是為了走更長遠的路、美化行動、利益他人',negLang:'過度依賴、劃除異己、孤軍奮戰'},
+  84:{pos:'享受孤獨、隨緣自在、獨當一面、仁慈施捨、低調',neg:'孤苦無依、踡縮不前、窮途末路、涼到落魄、有苦難言',sub:'面對壓迫的態度與行動',visual:'一位戴帽穿長大衣的老人獨自站立在街頭，棕灰色調，像是孤獨踽踽獨行的旅人又像是乞丐',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n老人伸手在做什麼？\n牆跟老人的關係為何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'享受孤獨、隨緣自在、獨當一面、仁慈施捨、低調',negLang:'孤苦無依、踡縮不前、窮途末路、涼到落魄、有苦難言'},
+  85:{pos:'最後防線、自我保護、隱私地帶、熱情所在、一覽無遺',neg:'拒絕親密、放不開、無安全感、不堪入目、極度壓抑、羞恥感',sub:'親密感、脆弱與自我暴露、與外界的連結',visual:'女生祼體/下體，雙手擺在大腿旁，像在保護或開放什麼',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n兩手想遮住的感覺是什麼？\n身體的鬆緊狀態為何？(1-10, 10最緊)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'最後防線、自我保護、隱私地帶、熱情所在、一覽無遺',negLang:'拒絕親密、放不開、無安全感、不堪入目、極度壓抑、羞恥感'},
+  86:{pos:'破釜沉舟、一刀兩斷、乾淨俐落、果斷明確',neg:'猶豫不決、難分難捨、斷絕關係、不留情面',sub:'斷捨離/換新開始',visual:'一隻手拿著剪刀對著一條布料剪下，紅藍對比背景，像是果斷剪斷的動作',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n手剪刀的速度為何？(1-10, 10最快)\n布剪到底的距離為何？(1-10, 10最遠)\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'破釜沉舟、一刀兩斷、乾淨俐落、果斷明確',negLang:'猶豫不決、難分難捨、斷絕關係、不留情面'},
+  87:{pos:'久旱甘霖、豐沛資源、毅力不逾、處變不驚、大地春雷',neg:'晴天霹靂、狂風暴雨、無力抵抗、天然災害、毀滅殘骸',sub:'內在世界的情緒',visual:'雷電劈過深色雲層降落於地面，像是暴風雨中的閃電交加',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n雷電交加是什麼或感受是什麼？為什麼？\n雷雨交加時，你會想做什麼？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'久旱甘霖、豐沛資源、毅力不逾、處變不驚、大地春雷',negLang:'晴天霹靂、狂風暴雨、無力抵抗、天然災害、毀滅殘骸'},
+  88:{pos:'創造歡樂、幽默有趣、笑臉迎人、犧牲奉獻',neg:'強顏歡笑、皮笑肉不笑、壓抑委屈、矯揉做作',sub:'內在與外在是否一致',visual:'一個穿黃衣戴帽的小丑咧嘴大笑，紅色花裝飾，像是熱鬧的馬戲團小丑',keyQ:'圖上畫的是什麼？哪個最吸引你？為什麼？\n看到圖片第一個感受是什麼？為什麼？\n小丑的笑臉，笑意如何？(1-10, 10最大)\n周圍人潮如何？\n你在哪裡？感覺如何？\n整張圖的明亮度是多少？(1-10, 10最亮)\n整張圖的溫度是多少？(1-10, 10最熱)',posLang:'創造歡樂、幽默有趣、笑臉迎人、犧牲奉獻',negLang:'強顏歡笑、皮笑肉不笑、壓抑委屈、矯揉做作'},
+};
+
+function cardToFileKey(cardNum){
+  // 11/12/17/18 在資料夾裡各有一份重複檔(.jpeg與.jpg內容相同)，
+  // 卡號與檔名是單純的 1:1 對應，不需位移。
+  return String(cardNum).padStart(2,'0');
+}
+
+function cardImageId(cardNum){ return FILE_IDS[cardToFileKey(cardNum)]; }
+function cardImgUrl(id){ return 'https://lh3.googleusercontent.com/d/' + id; }
+
+
+// OH Studio — Word Cards (88 fixed + 2 blank, never expanded)
+const WORD_CARDS = [
+  "感情","違背","危險","奇妙","羞愧","孩童","男性","厭煩","前進","錯誤",
+  "誇贊","女人","應該","歡笑","母親","姿態","權利遊戲","希望","專家","罪惡感",
+  "遊戲","夢想","強迫","改變","退省","不喜歡","破壞","上司","受害者","憎恨",
+  "付出","吸引","道歉","詼諧","成功","腐朽","外表","敵對","醜陋","生氣",
+  "失敗","虧欠","丟臉","固執","尷尬","躲藏","等候","習慣","聰明","羞辱",
+  "謊言","陌生人","喜悅","恐懼","弄巧成拙","奴隸","堅定","攫取","猶豫","愚蠢",
+  "威脅","憎惡","孤獨","抗拒","攻擊","同性戀","哀傷","依賴","停止","混亂",
+  "循環","疲憊","開始","幻想","父親","家","執著","分享","放開","愛情",
+  "恐嚇","壓抑","焦慮","裸體","消除","順應","色情","痛苦"
+];
+const BLANK_CARDS = ["空白卡 A","空白卡 B"];
+
+
+const PRESET_EMOTIONS = ['害怕','開心','驚嚇','生氣','難過','想要','不安'];
+let customEmotions = [];
+let snapshots = [];
+let snapshotCounter = 0;
+let currentPicker = { snapshotId:null, frameIdx:null, type:'image' };
+
+function addSnapshot(){
+  snapshotCounter++;
+  snapshots.push({id:'s'+snapshotCounter, frames:[], looseImages:[], entities:[{name:'自己'}]});
+  render();
+}
+function removeSnapshot(id){ snapshots = snapshots.filter(s=>s.id!==id); render(); }
+
+function render(){
+  document.getElementById('snapshotContainer').innerHTML = snapshots.map((s,i)=>snapHTML(s,i+1)).join('');
+  buildGrids();
+}
+
+function snapHTML(s, num){
+  return `<div class="snapshot">
+    <div class="snapshot-header">
+      <div class="snapshot-title-group"><div class="snapshot-number">${num}</div><div class="snapshot-title">探索快照 ${num}</div></div>
+      <span class="entity-remove" onclick="removeSnapshot('${s.id}')">刪除快照</span>
+    </div>
+    <div class="snapshot-body">
+      <div class="subhead"><i class="ti ti-camera"></i> 牌陣照片（選填）</div>
+      <label class="photo-upload"><i class="ti ti-upload"></i> 點擊上傳實體牌陣照片（Phase 2 會自動辨識）<input type="file" accept="image/*" style="display:none" onchange="previewPhoto(this)"></label>
+
+      <div class="subhead"><i class="ti ti-cards"></i> 牌組（字卡為框，圖卡放進框裡）</div>
+      <div class="cardset">
+        ${s.frames.map((f,fi)=>frameHTML(s.id,f,fi)).join('')}
+        ${s.looseImages.map((img,li)=>`<div class="img-card loose-img"><span class="num">${String(img).padStart(2,'0')}</span><span class="rm" onclick="rmLoose('${s.id}',${li})">×</span><img src="${cardImgUrl(cardImageId(img))}" loading="lazy" referrerpolicy="no-referrer"></div>`).join('')}
+        <div class="add-card-controls">
+          <button class="add-frame-btn" onclick="openPicker('${s.id}',null,'word')">+ 字卡框</button>
+          <button class="add-loose-btn" onclick="openPicker('${s.id}','loose','image')">+ 單放圖卡</button>
+        </div>
+      </div>
+
+      <div class="subhead"><i class="ti ti-book"></i> 故事</div>
+      <div class="field integrated-story">
+        <label>統整故事（整組牌的故事）</label>
+        <textarea placeholder="這組牌合起來，客戶說了什麼整體的故事..."></textarea>
+      </div>
+      <div class="field percard-story">
+        <label>各卡故事（選填，一張圖一個故事）</label>
+        <textarea placeholder="如果某張圖卡有單獨的故事，記在這..."></textarea>
+      </div>
+
+      <div class="subhead"><i class="ti ti-users"></i> 人物 / 物件</div>
+      <div id="ent-${s.id}">${s.entities.map((e,ei)=>entHTML(s.id,e,ei)).join('')}</div>
+      <button class="add-entity-btn" onclick="addEnt('${s.id}')">+ 新增人物 / 物件</button>
+
+      <div class="metrics-row">
+        <div class="metric-chip"><span class="metric-chip-name">亮度</span><input type="range" min="0" max="10" value="5" oninput="this.nextElementSibling.textContent=this.value" style="width:70px"><span class="metric-chip-val">5</span></div>
+        <div class="metric-chip"><span class="metric-chip-name">熱度</span><input type="range" min="0" max="10" value="5" oninput="this.nextElementSibling.textContent=this.value" style="width:70px"><span class="metric-chip-val">5</span></div>
+        <button class="add-metric-chip" onclick="addMetric(this)">+ 指標</button>
+      </div>
+
+      <div class="closing">
+        <div class="closing-title">探索收尾</div>
+        <div class="field"><label>個案的領會 / 特徵</label><textarea placeholder="客戶自己的發現、領悟、表現出的特徵..."></textarea></div>
+        <div class="field"><label>潛意識提醒統整 <span class="client-badge">個案版輸出</span></label><textarea placeholder="這次探索浮現的潛意識訊息，會給個案看..."></textarea></div>
+        <div class="field" style="margin-bottom:0"><label>最小行動方案 <span class="client-badge">個案版輸出</span></label><textarea placeholder="具體、可執行的下一步，會給個案看..."></textarea></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function frameHTML(sid, frame, fi){
+  return `<div class="card-frame">
+    <span class="frame-rm" onclick="rmFrame('${sid}',${fi})">×</span>
+    <span class="card-frame-label">${frame.word}</span>
+    <div class="card-frame-inner">
+      ${frame.images.map((img,ii)=>`<div class="img-card"><span class="num">${String(img).padStart(2,'0')}</span><span class="rm" onclick="rmFrameImg('${sid}',${fi},${ii})">×</span><img src="${cardImgUrl(cardImageId(img))}" loading="lazy" referrerpolicy="no-referrer"></div>`).join('')}
+      <button class="add-img-in-frame" onclick="openPicker('${sid}',${fi},'image')">+</button>
+    </div>
+  </div>`;
+}
+
+function entHTML(sid, e, ei){
+  return `<div class="entity-card">
+    <div class="entity-head"><input class="entity-name-input" value="${e.name||''}" placeholder="人物名稱"><span class="entity-remove" onclick="rmEnt('${sid}',${ei})">移除</span></div>
+    <div class="entity-controls">
+      <div class="position-selector">
+        <div class="pos-mode-tabs"><button class="pos-mode-btn active" onclick="posMode(this,'grid')">位置</button><button class="pos-mode-btn" onclick="posMode(this,'bird')">俰瞰</button></div>
+        <div class="position-grid-wrap grid-view"><div class="outer-grid"></div></div>
+        <div class="bird-wrap"><div class="emotion-label">離圖片距離（選填，大多無）</div><input type="range" min="1" max="10" value="5" style="width:100%" oninput="this.nextElementSibling.textContent='距離：'+this.value"><div style="font-size:13px;color:var(--plum);font-weight:600;text-align:center;margin-top:4px;">距離：5</div></div>
+      </div>
+      <div class="emotion-section">
+        <div class="emotion-label">情緒（可多個，不一定每個都問）</div>
+        <div class="emo-list" id="emo-${sid}-${ei}"></div>
+        <div class="emotion-presets">
+          ${PRESET_EMOTIONS.map(em=>`<button class="emo-chip" onclick="addEmo('${sid}',${ei},'${em}')">${em}</button>`).join('')}
+          <button class="emo-chip" style="border-style:dashed" onclick="customEmo('${sid}',${ei})">+ 自訂</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function addEnt(sid){ snapshots.find(s=>s.id===sid).entities.push({name:''}); render(); }
+function rmEnt(sid,ei){ snapshots.find(s=>s.id===sid).entities.splice(ei,1); render(); }
+function addEmo(sid,ei,name){
+  const list=document.getElementById('emo-'+sid+'-'+ei);
+  const d=document.createElement('div'); d.className='emotion-item';
+  d.innerHTML=`<span class="emotion-name">${name}</span><input type="range" class="emotion-strength" min="0" max="10" value="5" oninput="this.nextElementSibling.textContent=this.value"><span class="emotion-val">5</span><span class="entity-remove" style="cursor:pointer" onclick="this.parentElement.remove()">×</span>`;
+  list.appendChild(d);
+}
+function customEmo(sid,ei){ const n=prompt('輸入新情緒（會成為以後常用）：'); if(n){ if(!PRESET_EMOTIONS.includes(n)&&!customEmotions.includes(n))customEmotions.push(n); addEmo(sid,ei,n);} }
+function posMode(btn,mode){ const s=btn.closest('.position-selector'); s.querySelectorAll('.pos-mode-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); s.querySelector('.grid-view').style.display=mode==='grid'?'flex':'none'; s.querySelector('.bird-wrap').style.display=mode==='bird'?'block':'none'; }
+function addMetric(btn){ const n=prompt('指標名稱（例：速度、模糊）：'); if(n){ const c=document.createElement('div'); c.className='metric-chip'; c.innerHTML=`<span class="metric-chip-name">${n}</span><input type="range" min="0" max="10" value="5" oninput="this.nextElementSibling.textContent=this.value" style="width:70px"><span class="metric-chip-val">5</span>`; btn.parentElement.insertBefore(c,btn);} }
+function buildGrids(){ document.querySelectorAll('.outer-grid').forEach(g=>{ if(g.children.length)return; for(let r=0;r<5;r++)for(let c=0;c<5;c++){ const cell=document.createElement('div'); cell.className='grid-cell'; if(r>=1&&r<=3&&c>=1&&c<=3)cell.classList.add('inner'); cell.onclick=()=>{ g.querySelectorAll('.grid-cell').forEach(x=>x.classList.remove('selected')); cell.classList.add('selected'); }; g.appendChild(cell);} }); }
+
+function previewPhoto(input){ if(input.files&&input.files[0]){ const r=new FileReader(); r.onload=e=>{ const img=document.createElement('img'); img.src=e.target.result; img.className='photo-preview'; input.closest('.photo-upload').replaceWith(img);}; r.readAsDataURL(input.files[0]);} }
+
+// Picker
+function openPicker(sid,frameIdx,type){ currentPicker={snapshotId:sid,frameIdx:frameIdx,type:type}; document.getElementById('cardPickerModal').classList.add('active'); switchPickerTab(type); }
+function closeCardPicker(){ document.getElementById('cardPickerModal').classList.remove('active'); }
+function switchPickerTab(type){ currentPicker.type=type; document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.modal-tab')[type==='image'?0:1].classList.add('active'); document.getElementById('pickerCardGrid').style.display=type==='image'?'grid':'none'; document.getElementById('pickerWordList').style.display=type==='word'?'block':'none'; document.getElementById('cardSearchInput').value=''; if(type==='image')renderImgs(''); else renderWords(''); }
+function renderImgs(filter){ let h=''; for(let i=1;i<=88;i++){ const kw=KEYWORDS[i]; if(filter){ const t=(kw?(kw.pos+kw.neg+kw.sub+kw.visual):'')+i; if(!t.includes(filter))continue; } h+=`<div class="picker-card" onclick="pickImg(${i})"><div class="picker-card-img"><img src="${cardImgUrl(cardImageId(i))}" loading="lazy" referrerpolicy="no-referrer"></div><div class="picker-card-label">${String(i).padStart(2,'0')}</div></div>`; } document.getElementById('pickerCardGrid').innerHTML=h||'<p style="color:var(--ink-faint);padding:20px">找不到</p>'; }
+function renderWords(filter){ let list=WORD_CARDS.filter(w=>!filter||w.includes(filter)); let h=list.map(w=>`<div class="word-chip" onclick="pickWord('${w}')">${w}</div>`).join(''); if(!filter){ h+=BLANK_CARDS.map(w=>`<div class="word-chip blank" onclick="pickWord('${w}')">${w}</div>`).join(''); } document.getElementById('wordChipList').innerHTML=h||'<p style="color:var(--ink-faint)">找不到這張字卡</p>'; }
+function filterCards(v){ if(currentPicker.type==='image')renderImgs(v); else renderWords(v); }
+function pickImg(num){ const s=snapshots.find(x=>x.id===currentPicker.snapshotId); if(currentPicker.frameIdx==='loose'){ s.looseImages.push(num); } else if(currentPicker.frameIdx!==null){ s.frames[currentPicker.frameIdx].images.push(num); } render(); closeCardPicker(); }
+function pickWord(word){ const s=snapshots.find(x=>x.id===currentPicker.snapshotId); s.frames.push({word:word,images:[]}); render(); closeCardPicker(); }
+function addFreeWord(){ const inp=document.getElementById('customWordInput'); const w=inp.value.trim(); if(w){ const s=snapshots.find(x=>x.id===currentPicker.snapshotId); s.frames.push({word:w+' (自創)',images:[]}); inp.value=''; render(); closeCardPicker(); } }
+function rmFrame(sid,fi){ snapshots.find(s=>s.id===sid).frames.splice(fi,1); render(); }
+function rmFrameImg(sid,fi,ii){ snapshots.find(s=>s.id===sid).frames[fi].images.splice(ii,1); render(); }
+function rmLoose(sid,li){ snapshots.find(s=>s.id===sid).looseImages.splice(li,1); render(); }
+
+function addMTag(input, type){
+  const val = input.value.trim();
+  if(!val) return;
+  const container = document.getElementById('mtags-'+type);
+  const span = document.createElement('span');
+  span.className = 'mtag';
+  span.innerHTML = val + '<span class="x" onclick="this.parentElement.remove()">×</span>';
+  container.appendChild(span);
+  input.value = '';
+}
+
+addSnapshot();
+</script>
+</body>
+</html>
