@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OH Studio — 鏡像生命諮詢室</title>
+    <!-- 靜音 Tailwind CDN 的 production 提示 -->
+    <script>
+        (function () {
+            const _warn = console.warn;
+            console.warn = function (...args) {
+                if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                _warn.apply(console, args);
+            };
+        })();
+    </script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Serif TC & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome & Tabler Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/tabler-icons.min.css" rel="stylesheet">
+    <!-- Vue 3 (cdnjs — 相容 Claude.ai 預覽沙盒) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.13/vue.global.prod.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #FFF9F2; /* 溫暖奶油粉色 */
+            --surface: #FFFFFF;
+            --primary: #FF8DA1; /* 療癒草莓粉 */
+            --primary-soft: #FFB5C2;
+            --secondary: #FFB085; /* 溫馨粉橘 */
+            --accent: #79C1B2; /* 療癒薄荷綠 */
+            --sand: #E6C594; /* 溫和奶茶金 */
+            --ink: #4E3629; /* 深朱古力褐（比黑色更溫和） */
+            --muted: #9E8675; /* 溫和霧奶茶 */
+            --red: #E05C5C; /* 輕柔櫻桃紅 */
+            --border: #F0E3D3;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg);
+            color: var(--ink);
+            background-image: radial-gradient(ellipse at 15% 85%, rgba(255, 176, 133, 0.08) 0%, transparent 50%),
+                              radial-gradient(ellipse at 85% 15%, rgba(121, 193, 178, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .serif-title {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 700;
+        }
+
+        .garamond-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.01);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(126, 112, 98, 0.15);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(126, 119, 98, 0.30);
+        }
+
+        /* Combined OH Card styling (Word outer frame + Image inner core) */
+        .oh-combo-card {
+            position: relative;
+            background: #FAF6EE;
+            border: 3px solid var(--sand);
+            box-shadow: 0 10px 25px -5px rgba(78, 54, 41, 0.12);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .oh-combo-card:hover {
+            transform: translateY(-4px) rotate(1deg);
+            box-shadow: 0 15px 30px -5px rgba(78, 54, 41, 0.18);
+        }
+
+        /* Combined Card Rotated Texts on margins */
+        .oh-card-w {
+            position: absolute;
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 700;
+            color: var(--ink);
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            pointer-events: none;
+            user-select: none;
+        }
+        .oh-card-w.t {
+            top: 7px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+        .oh-card-w.b {
+            bottom: 7px;
+            left: 50%;
+            transform: translateX(-50%) rotate(180deg);
+            white-space: nowrap;
+        }
+        .oh-card-w.l {
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            white-space: nowrap;
+        }
+        .oh-card-w.r {
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+            white-space: nowrap;
+        }
+
+        /* Image Core centered inside the word frame */
+        .oh-image-core {
+            position: absolute;
+            top: 26px;
+            bottom: 26px;
+            left: 22px;
+            right: 22px;
+            border: 2.5px solid var(--red);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #FFF;
+        }
+
+        .oh-image-core img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Cute Bubble Chat Styling */
+        .bubble-facilitator {
+            background-color: #FFF;
+            border: 2px solid var(--primary-soft);
+            color: var(--ink);
+            border-radius: 18px 18px 2px 18px;
+            box-shadow: 0 4px 10px rgba(255, 141, 161, 0.08);
+        }
+
+        .bubble-client {
+            background-color: #FAF4EE;
+            border: 2px solid var(--sand);
+            color: var(--ink);
+            border-radius: 18px 18px 18px 2px;
+            box-shadow: 0 4px 10px rgba(230, 197, 148, 0.1);
+        }
+
+        .bubble-system {
+            background-color: #EBF7F5;
+            border: 2px dashed var(--accent);
+            color: var(--ink);
+            border-radius: 16px;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+    <div id="app" class="flex-1 flex flex-col">
+
+        <!-- Global Cute Header -->
+        <header class="bg-white text-[#4E3629] px-6 py-3 border-b-4 border-[#F0E3D3] shadow-sm sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-[#FF8DA1] rounded-2xl flex items-center justify-center text-white shadow-sm rotate-[-3deg]">
+                        <i class="ti ti-scooter text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-black tracking-wider serif-title flex items-center gap-2">
+                            鏡像生命諮詢室 ✨ <span class="garamond-title text-xs text-[#9E8675] font-light">Mirrors Drawing Room</span>
+                        </h1>
+                        <p class="text-[10px] text-[#9E8675] font-bold tracking-wide">🎈 趣味探索引導練習生工作台 • 陪伴看圖說故事</p>
+                    </div>
+                </div>
+
+                <!-- API Key Config and Reset -->
+                <div class="flex items-center gap-3 flex-wrap justify-center">
+                    <div class="relative flex items-center" title="在 Claude.ai 預覽中使用時免填金鑰。若下載到本機或放上 GitHub Pages，請填入 Anthropic (sk-ant-...) 或 Gemini (AIza...) 金鑰，系統會自動判別。">
+                        <span class="absolute left-2.5 text-[#9E8675] text-xs"><i class="fa-solid fa-key"></i></span>
+                        <input 
+                            v-model="apiKey" 
+                            type="password" 
+                            placeholder="金鑰(Claude.ai內免填)" 
+                            class="pl-7 pr-3 py-1 text-[11px] bg-[#FFF9F2] focus:bg-white text-[#4E3629] border-2 border-[#F0E3D3] rounded-full outline-none w-44 transition-all"
+                        />
+                    </div>
+                    <button 
+                        v-if="trainerStage !== 'setup'" 
+                        @click="resetTrainerSimulation" 
+                        class="bg-[#FF8DA1] hover:bg-[#E05C5C] text-white px-3.5 py-1 rounded-full text-xs font-bold tracking-wider shadow-sm transition-all"
+                    >
+                        🌸 重新開一局
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ========================================== -->
+        <!-- STATE 1: SETUP SCREEN                      -->
+        <!-- ========================================== -->
+        <main v-if="trainerStage === 'setup'" class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 flex items-center justify-center">
+            <div class="bg-white border-4 border-[#F0E3D3] rounded-3xl shadow-md p-6 sm:p-10 w-full max-w-5xl transition-all">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <span class="bg-[#79C1B2] text-white text-[10px] font-extrabold px-3.5 py-1 rounded-full uppercase tracking-widest">🌸 暖心陪伴式牌卡模擬 🌸</span>
+                    <h2 class="text-2xl font-black text-[#4E3629] mt-3 mb-3 serif-title">歡迎來到，鏡像生命諮詢室！</h2>
+                    <p class="text-[#9E8675] text-xs leading-relaxed">
+                        這裡是一個溫馨放鬆的小空間。引導師的角色不是說教，也不是鐵口直斷解牌喔～<br>
+                        我們的核心祕訣是帶領個案看著圖像，溫柔地問他：<strong>「你看到了什麼呢？試著看圖說故事吧！」</strong>
+                    </p>
+                </div>
+
+                <h3 class="text-xs font-black text-[#4E3629] mb-5 flex items-center gap-1.5 border-b-2 border-[#F0E3D3] pb-2 uppercase tracking-wide">
+                    <i class="ti ti-mood-smile text-[#FF8DA1] text-base"></i> 🧸 挑選一位你想陪伴的聊天個案：
+                </h3>
+
+                <!-- Client Profiles Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div 
+                        v-for="profile in clientProfiles" 
+                        :key="profile.id"
+                        @click="selectedProfileId = profile.id"
+                        class="border-3 rounded-2xl p-4 cursor-pointer transition-all flex flex-col justify-between relative group"
+                        :class="selectedProfileId === profile.id ? 'border-[#FF8DA1] bg-[#FFF9F2] shadow-sm ring-4 ring-[#FF8DA1]/10' : 'border-[#F0E3D3] hover:border-[#FFB5C2] bg-white'"
+                    >
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-extrabold text-[#4E3629] text-sm serif-title flex items-center gap-1">
+                                    <span v-if="profile.id === 'yueyue'">👦</span>
+                                    <span v-else-if="profile.id === 'takeshi'">👨</span>
+                                    <span v-else-if="profile.id === 'xiaomei'">👩</span>
+                                    <span v-else>👴</span>
+                                    {{ profile.name }}
+                                </span>
+                                <span class="bg-[#FFF9F2] text-[#9E8675] text-[10px] px-2 py-0.5 rounded-full font-bold">{{ profile.age }} 歲</span>
+                            </div>
+
+                            <span class="text-[9px] bg-[#79C1B2] text-white px-2 py-0.5 rounded-full font-bold inline-block mb-3">{{ profile.title }}</span>
+                            
+                            <div class="italic text-[10px] text-[#9E8675] border-l-2 border-[#E6C594] pl-2 py-0.5 mb-3">
+                                {{ profile.quote }}
+                            </div>
+
+                            <div class="space-y-1 mt-1 text-[11px] leading-relaxed">
+                                <span class="text-[#FF8DA1] font-extrabold block text-[9px]">呈現的困擾：</span>
+                                <p class="text-[#9E8675] line-clamp-3">{{ profile.presentedIssue }}</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t-2 border-[#F0E3D3] mt-4 pt-2.5 flex items-center justify-between text-[10px] text-[#9E8675]">
+                            <span>挑戰度: <strong class="text-[#FF8DA1]">{{ profile.difficulty }}</strong></span>
+                            <span class="text-[#79C1B2] font-black flex items-center gap-0.5" v-if="selectedProfileId === profile.id">
+                                <i class="ti ti-circle-check text-base"></i> 點選中
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Action triggers -->
+                <div class="flex flex-col items-center gap-4 justify-center">
+                    <div class="w-full max-w-md flex flex-col gap-1 text-center">
+                        <label class="text-[10px] font-black text-[#9E8675] tracking-wider uppercase">✨ 本次會談的主題或核心問題（選填）</label>
+                        <input 
+                            v-model="sessionQuestion" 
+                            type="text" 
+                            placeholder="例：探索與家人的內在心結，或是自由聊天..." 
+                            class="w-full text-center px-4 py-2 text-xs bg-[#FFF9F2] border-2 border-[#F0E3D3] focus:border-[#FF8DA1] rounded-full outline-none transition-all"
+                        />
+                    </div>
+
+                    <button 
+                        @click="startSimulation"
+                        :disabled="!selectedProfileId"
+                        class="bg-[#FF8DA1] hover:bg-[#E05C5C] text-white font-black px-10 py-3 rounded-full transition-all shadow-md flex items-center gap-1.5 disabled:opacity-50 text-xs tracking-wider mt-1"
+                    >
+                        <span>開啟暖心對話 🧸</span>
+                        <i class="ti ti-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- ========================================== -->
+        <!-- STATE 2: ACTIVE CONSULTATION CONSOLE       -->
+        <!-- ========================================== -->
+        <main v-else-if="trainerStage === 'chat'" class="flex-1 flex flex-col lg:flex-row overflow-hidden max-w-7xl w-full mx-auto p-4 gap-4">
+            
+            <!-- LEFT PANEL: Dialogue Flow & Input -->
+            <section class="flex-1 bg-white border-3 border-[#F0E3D3] rounded-3xl flex flex-col overflow-hidden shadow-sm min-h-[500px]">
+                
+                <!-- Chat Screen Topbar Header -->
+                <div class="px-5 py-3 border-b-2 border-[#F0E3D3] bg-[#FFF9F2] flex justify-between items-center shrink-0 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#FF8DA1] animate-ping"></span>
+                        <div>
+                            <span class="text-[9px] text-[#9E8675] font-black tracking-wide uppercase">諮詢對話熱烈進行中 🍀</span>
+                            <p class="text-xs font-bold text-[#4E3629] serif-title" v-if="sessionQuestion">探討：{{ sessionQuestion }}</p>
+                        </div>
+                    </div>
+                    <button 
+                        @click="stopSimulationAndEvaluate"
+                        class="bg-[#4E3629] hover:bg-[#E05C5C] text-white text-[10px] font-black px-4 py-1.5 rounded-full transition-all shadow-sm"
+                    >
+                        🌸 晤談結束，請督導評估
+                    </button>
+                </div>
+
+                <!-- Dialog Feeds -->
+                <div ref="chatContainer" class="flex-1 overflow-y-auto px-5 py-5 space-y-4 custom-scrollbar bg-[#FFFBF7]">
+                    
+                    <!-- Warm Welcome System Prompt -->
+                    <div class="flex gap-2.5 max-w-[85%]">
+                        <div class="w-7 h-7 rounded-xl bg-[#79C1B2] text-white flex items-center justify-center text-xs shrink-0 rotate-[4deg]">
+                            <i class="ti ti-bell-ringing"></i>
+                        </div>
+                        <div class="bubble-system px-4 py-3 text-[11px] leading-relaxed shadow-sm">
+                            <span class="font-extrabold text-[#79C1B2] block mb-0.5">諮詢室暖心小叮嚀 🌸</span>
+                            個案【{{ activeClient.name }}】已經坐下來囉！你可以透過<strong>右側工作台【隨機抽卡】或【選卡】</strong>。
+                            當卡片出現在桌面上時，點選<strong>【遞給個案】</strong>，即可自然引導他進行「看圖說故事」與投射探索喔！
+                        </div>
+                    </div>
+
+                    <!-- Conversation Blocks -->
+                    <div 
+                        v-for="(msg, index) in messages" 
+                        :key="index"
+                        class="flex gap-2.5 max-w-[85%] transition-all"
+                        :class="msg.role === 'facilitator' ? 'ml-auto flex-row-reverse' : ''"
+                    >
+                        <!-- Rounded cute avatars -->
+                        <div 
+                            class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-black shadow-sm"
+                            :class="msg.role === 'facilitator' ? 'bg-[#FF8DA1] text-white border-2 border-white' : 'bg-[#E6C594] text-[#4E3629] border-2 border-white'"
+                        >
+                            {{ msg.role === 'facilitator' ? '師' : '案' }}
+                        </div>
+
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-[9px] font-black tracking-wide text-[#9E8675] block" :class="msg.role === 'facilitator' ? 'text-right' : ''">
+                                {{ msg.role === 'facilitator' ? '引導師 (您)' : activeClient.name }}
+                            </span>
+
+                            <div 
+                                class="px-4 py-2.5 text-xs leading-relaxed shadow-sm whitespace-pre-wrap"
+                                :class="msg.role === 'facilitator' ? 'bubble-facilitator' : 'bubble-client'"
+                            >
+                                <!-- Combined card visual if shared -->
+                                <div v-if="msg.card" class="mb-3 border-2 border-dashed border-[#E6C594]/60 rounded-2xl p-3 bg-stone-900/5 flex flex-col items-center justify-center">
+                                    <span class="text-[9px] font-extrabold text-[#9E8675] block mb-1.5"><i class="ti ti-cards mr-1"></i> 遞出探索卡牌 🔮</span>
+                                    
+                                    <!-- Combined Render -->
+                                    <div class="relative w-[130px] h-[190px] bg-[#FAF6EE] border-2 border-[#E6C594] rounded-xl shadow-inner select-none flex-shrink-0">
+                                        <!-- Rotated border text representation -->
+                                        <div class="oh-card-w t text-[9px]">{{ msg.card.word }}</div>
+                                        <div class="oh-card-w b text-[9px]">{{ msg.card.word }}</div>
+                                        <div class="oh-card-w l text-[8px]">{{ msg.card.word }}</div>
+                                        <div class="oh-card-w r text-[8px]">{{ msg.card.word }}</div>
+                                        <!-- Core image -->
+                                        <div class="absolute top-[20px] bottom-[20px] left-[16px] right-[20px] border-2 border-red-400 rounded overflow-hidden">
+                                            <img :src="msg.card.imageUrl" class="w-full h-full object-cover" @error="handleImgFallback"/>
+                                        </div>
+                                    </div>
+                                    <span class="text-[9px] text-[#9E8675] mt-2 font-bold">字卡：『{{ msg.card.word }}』 + 圖卡：#{{ String(msg.card.imgNum).padStart(2, '0') }}</span>
+                                </div>
+
+                                <p>{{ msg.text }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Client thinking animation -->
+                    <div v-if="isThinking" class="flex gap-2.5 max-w-[85%]">
+                        <div class="w-8 h-8 rounded-full bg-white border border-stone-200 text-[#FF8DA1] flex items-center justify-center shrink-0">
+                            <i class="ti ti-loader animate-spin text-xs"></i>
+                        </div>
+                        <div class="bg-[#FAF4EE] border-2 border-[#F0E3D3] text-[#9E8675] rounded-2xl px-4 py-2 text-xs italic">
+                            <span>{{ activeClient.name }} 正在默默看圖，醞釀故事中... 🎨</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Console -->
+                <div class="p-3 border-t-2 border-[#F0E3D3] bg-white">
+                    <form @submit.prevent="sendFacilitatorInput" class="flex gap-2">
+                        <textarea 
+                            v-model="inputMessage" 
+                            @keydown.enter.exact.prevent="sendFacilitatorInput"
+                            rows="2"
+                            placeholder="輸入你的話...試著反映對方的感受，不用急著給建議喔～ (Enter 送出)" 
+                            class="flex-1 border-2 border-[#F0E3D3] focus:border-[#FF8DA1] rounded-2xl px-4 py-2 text-xs resize-none outline-none transition-all custom-scrollbar bg-[#FFFBF7] focus:bg-white text-[#4E3629]"
+                            :disabled="isThinking"
+                        ></textarea>
+                        <button 
+                            type="submit"
+                            :disabled="!inputMessage.trim() || isThinking"
+                            class="bg-[#FF8DA1] hover:bg-[#E05C5C] disabled:bg-stone-100 disabled:text-stone-300 text-white font-bold px-4 rounded-2xl transition-all flex items-center justify-center"
+                        >
+                            <i class="ti ti-brand-telegram text-lg"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Interactive OH Card Workbench -->
+            <section class="w-full lg:w-[380px] flex flex-col gap-4 shrink-0 overflow-y-auto custom-scrollbar pr-1">
+                
+                <!-- Supervisory Sky-Lens Dials -->
+                <div class="bg-white text-[#4E3629] border-3 border-[#F0E3D3] rounded-3xl p-4 shadow-sm space-y-3.5">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-black text-[#FF8DA1] tracking-widest uppercase flex items-center gap-1">
+                            <i class="ti ti-eye"></i> 🔮 內心天眼偵測儀
+                        </h4>
+                        <span class="text-[8px] bg-[#EBF7F5] text-[#79C1B2] border border-[#79C1B2]/30 px-2 py-0.5 rounded-full font-bold">即時回饋</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        <div class="bg-[#FFF9F2] rounded-xl p-2.5 border border-[#F0E3D3]">
+                            <span class="text-[#9E8675] block text-[9px] font-bold">信任感 (Trust)</span>
+                            <span class="text-sm font-black text-[#4E3629] mt-0.5 block">{{ hiddenState.trust }}%</span>
+                            <div class="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden mt-1">
+                                <div class="bg-[#79C1B2] h-full transition-all duration-300" :style="{ width: hiddenState.trust + '%' }"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#FFF9F2] rounded-xl p-2.5 border border-[#F0E3D3]">
+                            <span class="text-[#9E8675] block text-[9px] font-bold">防衛阻抗 (Defense)</span>
+                            <span class="text-sm font-black text-[#E05C5C] mt-0.5 block">{{ hiddenState.defensiveness }}%</span>
+                            <div class="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden mt-1">
+                                <div class="bg-[#E05C5C] h-full transition-all duration-300" :style="{ width: hiddenState.defensiveness + '%' }"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#FFF9F2] rounded-xl p-2.5 border border-[#F0E3D3]">
+                            <span class="text-[#9E8675] block text-[9px] font-bold">開放度 (Openness)</span>
+                            <span class="text-sm font-black text-sky-500 mt-0.5 block">{{ hiddenState.openness }}%</span>
+                            <div class="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden mt-1">
+                                <div class="bg-sky-400 h-full transition-all duration-300" :style="{ width: hiddenState.openness + '%' }"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#FFF9F2] rounded-xl p-2.5 border border-[#F0E3D3]">
+                            <span class="text-[#9E8675] block text-[9px] font-bold">安全同盟 (Alliance)</span>
+                            <span class="text-sm font-black text-purple-500 mt-0.5 block">{{ hiddenState.relationshipDepth }}%</span>
+                            <div class="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden mt-1">
+                                <div class="bg-purple-400 h-full transition-all duration-300" :style="{ width: hiddenState.relationshipDepth + '%' }"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Internal thought bubble -->
+                    <div class="bg-[#FFFBF7] border-2 border-dashed border-[#F0E3D3] rounded-xl p-2.5 text-[11px] leading-relaxed">
+                        <span class="font-extrabold text-[9px] text-[#E6C594] block mb-0.5">💭 個案潛意識悄悄話：</span>
+                        <p class="italic text-[#9E8675] font-medium">"{{ internalThought || '（還在默默觀察環境，防備被評價中...）' }}"</p>
+                    </div>
+                </div>
+
+                <!-- Interactive Card Draw Studio -->
+                <div class="bg-white border-3 border-[#F0E3D3] rounded-3xl p-4 shadow-sm flex flex-col gap-3">
+                    <h4 class="text-xs font-black text-[#4E3629] tracking-wider uppercase flex items-center gap-1 border-b-2 border-[#F0E3D3] pb-2">
+                        <i class="ti ti-cards text-[#79C1B2]"></i> 🧸 OH 牌卡沙盒工作桌
+                    </h4>
+
+                    <!-- Draw tools and modes -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <button 
+                            @click="drawRandomCardCombined" 
+                            class="bg-[#FF8DA1] hover:bg-[#E05C5C] text-white text-xs font-black py-2 rounded-xl flex items-center justify-center gap-1 transition-all shadow-sm"
+                        >
+                            <i class="ti ti-sparkles"></i>
+                            <span>魔法隨機抽卡</span>
+                        </button>
+                        <button 
+                            @click="openCardPicker" 
+                            class="bg-[#FFF9F2] hover:bg-[#F0E3D3] text-[#4E3629] border-2 border-[#F0E3D3] text-xs font-black py-2 rounded-xl flex items-center justify-center gap-1 transition-all"
+                        >
+                            <i class="ti ti-hand-finger"></i>
+                            <span>手動配卡牌</span>
+                        </button>
+                    </div>
+
+                    <!-- Sandbox Display Center -->
+                    <div class="bg-[#FFFBF7] border-2 border-dashed border-[#F0E3D3] rounded-2xl p-4 min-h-[250px] flex flex-col items-center justify-center relative overflow-hidden">
+                        <div v-if="!currentSandboxCard" class="text-center p-4 space-y-2">
+                            <i class="ti ti-ghost text-3xl text-[#E6C594]/60"></i>
+                            <span class="text-[11px] text-[#9E8675] block leading-relaxed">
+                                目前桌面上沒有牌～<br>點擊隨機抽牌，或點選手動配牌吧！
+                            </span>
+                        </div>
+
+                        <!-- Combined OH Card Preview -->
+                        <div v-else class="flex flex-col items-center">
+                            <!-- Combined Render Card -->
+                            <div class="oh-combo-card w-[150px] h-[225px] relative select-none">
+                                <!-- Rotate Text Labels on Margins -->
+                                <div class="oh-card-w t text-[9px]">{{ currentSandboxCard.word }}</div>
+                                <div class="oh-card-w b text-[9px]">{{ currentSandboxCard.word }}</div>
+                                <div class="oh-card-w l text-[8px]">{{ currentSandboxCard.word }}</div>
+                                <div class="oh-card-w r text-[8px]">{{ currentSandboxCard.word }}</div>
+                                
+                                <!-- Core Inner Image Card Slot -->
+                                <div class="oh-image-core">
+                                    <img :src="currentSandboxCard.imageUrl" loading="lazy" referrerpolicy="no-referrer" @error="handleImgFallback">
+                                </div>
+                            </div>
+
+                            <span class="text-[11px] text-[#4E3629] font-black mt-3">字卡：『{{ currentSandboxCard.word }}』 ＋ 圖卡：#{{ String(currentSandboxCard.imgNum).padStart(2, '0') }}</span>
+                            <p class="text-[9px] text-center text-[#9E8675] mt-1 max-w-[280px]">這張牌代表「{{ currentSandboxCard.keywords }}」等特徵要素。</p>
+                        </div>
+                    </div>
+
+                    <!-- Sandbox Operations -->
+                    <div v-if="currentSandboxCard" class="flex gap-2">
+                        <button 
+                            @click="shareCardWithClient" 
+                            class="flex-1 bg-[#79C1B2] hover:bg-[#5AA194] text-white text-xs font-black py-2.5 rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm"
+                        >
+                            <i class="ti ti-send"></i>
+                            <span>✨ 遞給個案並邀請看圖說故事</span>
+                        </button>
+                        <button 
+                            @click="currentSandboxCard = null" 
+                            class="bg-[#FFF9F2] hover:bg-stone-200 text-[#4E3629] p-2.5 rounded-xl border border-[#F0E3D3]"
+                            title="丟進棄牌桶"
+                        >
+                            <i class="ti ti-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ========================================== -->
+        <!-- STATE 3: SUPERVISOR EVALUATION FEEDBACK    -->
+        <!-- ========================================== -->
+        <main v-else-if="trainerStage === 'feedback'" class="flex-1 max-w-4xl w-full mx-auto px-4 py-6">
+            <div class="bg-white border-4 border-[#F0E3D3] rounded-3xl shadow-md p-6 sm:p-8 space-y-6">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b-2 border-[#F0E3D3] pb-4">
+                    <div>
+                        <span class="bg-[#79C1B2] text-white text-[9px] font-extrabold px-3 py-0.5 rounded-full uppercase tracking-wider">🌸 督導評析小築 Supervisor Feedback 🌸</span>
+                        <h2 class="text-xl font-black text-[#4E3629] mt-1.5 serif-title">會談引導成果報告書</h2>
+                        <p class="text-xs text-[#9E8675] mt-0.5">剛剛與個案【{{ activeClient.name }}】的親密對話成果出爐囉！</p>
+                    </div>
+                    <button 
+                        @click="resetTrainerSimulation"
+                        class="bg-[#FF8DA1] hover:bg-[#E05C5C] text-white font-bold px-4 py-2 rounded-full transition-all text-xs tracking-wider flex items-center gap-1 shadow-sm"
+                    >
+                        <i class="ti ti-arrow-back-up"></i>
+                        <span>重新玩一局</span>
+                    </button>
+                </div>
+
+                <!-- Supervisor Loading Spinner -->
+                <div v-if="isEvaluating" class="flex flex-col items-center justify-center py-16 gap-3">
+                    <div class="relative flex items-center justify-center">
+                        <div class="w-12 h-12 border-4 border-stone-100 border-t-[#FF8DA1] rounded-full animate-spin"></div>
+                        <i class="ti ti-gift text-[#FF8DA1] text-lg absolute"></i>
+                    </div>
+                    <div class="text-center space-y-1">
+                        <h3 class="font-bold text-sm text-stone-800">督導正在用心為你調製精美報告...</h3>
+                        <p class="text-[10px] text-stone-500">正在回放您對【看圖說故事】與【字詞反映】的引導手法...</p>
+                    </div>
+                </div>
+
+                <!-- Evaluated Result Dashboard -->
+                <div v-else-if="feedbackData" class="space-y-6">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 bg-[#FFF9F2] border-2 border-[#F0E3D3] rounded-2xl p-5">
+                        <div class="flex flex-col items-center justify-center text-center p-3 border-b md:border-b-0 md:border-r border-[#F0E3D3]">
+                            <span class="text-[10px] font-black text-[#9E8675] tracking-widest">🌸 綜合暖心得分</span>
+                            <div class="relative flex items-baseline justify-center my-3">
+                                <span class="text-5xl font-black text-[#FF8DA1] tracking-tight">{{ feedbackData.scores.overallScore }}</span>
+                                <span class="text-xs text-[#9E8675] font-bold ml-1">/100</span>
+                            </div>
+                            <span class="text-[10px] text-[#9E8675] leading-relaxed">這個分數基於您的積極同理與看圖說故事引導比例。</span>
+                        </div>
+
+                        <!-- Core score breakdown -->
+                        <div class="md:col-span-2 flex flex-col justify-center space-y-3 px-1">
+                            <h4 class="font-bold text-[9px] text-[#9E8675] uppercase tracking-wider">🌟 引導技能維度指標</h4>
+                            
+                            <div class="space-y-0.5">
+                                <div class="flex justify-between text-xs font-bold text-stone-700">
+                                    <span>建立諮詢安全關係 (Alliance)</span>
+                                    <span>{{ feedbackData.scores.relationshipBuilding }}%</span>
+                                </div>
+                                <div class="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-[#79C1B2] h-full rounded-full" :style="{ width: feedbackData.scores.relationshipBuilding + '%' }"></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-0.5">
+                                <div class="flex justify-between text-xs font-bold text-stone-700">
+                                    <span>引導與反映提問技巧 (Questioning)</span>
+                                    <span>{{ feedbackData.scores.questioningTechniques }}%</span>
+                                </div>
+                                <div class="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-[#E6C594] h-full rounded-full" :style="{ width: feedbackData.scores.questioningTechniques + '%' }"></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-0.5">
+                                <div class="flex justify-between text-xs font-bold text-stone-700">
+                                    <span>情感同理與貼近度 (Empathy)</span>
+                                    <span>{{ feedbackData.scores.empathy }}%</span>
+                                </div>
+                                <div class="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-[#FF8DA1] h-full rounded-full" :style="{ width: feedbackData.scores.empathy + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Critical Detailed Feedbacks -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
+                        <div class="border-2 border-[#F0E3D3] rounded-2xl p-4 space-y-1.5 bg-white shadow-sm">
+                            <span class="font-black text-[#FF8DA1] flex items-center gap-1">
+                                🌸 1. 安全關係與信賴建立
+                            </span>
+                            <p class="text-stone-600">{{ feedbackData.evaluation.relationship }}</p>
+                        </div>
+
+                        <div class="border-2 border-[#F0E3D3] rounded-2xl p-4 space-y-1.5 bg-white shadow-sm">
+                            <span class="font-black text-[#FF8DA1] flex items-center gap-1">
+                                🌸 2. 情感反映與提問技術
+                            </span>
+                            <p class="text-stone-600">{{ feedbackData.evaluation.questioning }}</p>
+                        </div>
+
+                        <div class="border-2 border-[#F0E3D3] rounded-2xl p-4 space-y-1.5 bg-[#FFF9F2] shadow-sm">
+                            <span class="font-black text-[#E05C5C] flex items-center gap-1">
+                                🌸 3. 是否過早說教或塞給建議？
+                            </span>
+                            <p class="text-[#9E8675]">{{ feedbackData.evaluation.prematureAnalysis }}</p>
+                        </div>
+
+                        <div class="border-2 border-[#F0E3D3] rounded-2xl p-4 space-y-1.5 bg-[#FFFBF7] shadow-sm">
+                            <span class="font-black text-[#E6C594] flex items-center gap-1">
+                                🌸 4. 遺漏掉的微弱防衛聲音
+                            </span>
+                            <p class="text-stone-600">{{ feedbackData.evaluation.missedClues }}</p>
+                        </div>
+
+                        <div class="border-2 border-[#F0E3D3] rounded-2xl p-4 space-y-1.5 bg-white shadow-sm md:col-span-2">
+                            <span class="font-black text-[#79C1B2] flex items-center gap-1">
+                                🌸 5. OH Card 【看圖說故事】引導深度評估
+                            </span>
+                            <p class="text-stone-600">{{ feedbackData.ohCardCritique || feedbackData.evaluation.ohCardTiming }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Suggestions -->
+                    <div class="bg-[#FF8DA1] text-white rounded-2xl p-5 space-y-3.5 shadow-sm">
+                        <h4 class="font-black text-xs uppercase tracking-wider flex items-center gap-1 text-white">
+                            <i class="ti ti-bulb"></i> 🧸 督導悄悄話：下次我們可以這樣引導會更好喔！
+                        </h4>
+                        <ul class="space-y-2 text-xs text-white/90 leading-relaxed">
+                            <li v-for="(suggestion, i) in feedbackData.suggestions" :key="i" class="flex gap-2">
+                                <span class="bg-white/20 text-white font-mono font-bold w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5">{{ i + 1 }}</span>
+                                <span>{{ suggestion }}</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ========================================== -->
+        <!-- MODAL: DETAILED CARD PICKER BROWSER        -->
+        <!-- ========================================== -->
+        <div v-if="showPickerModal" class="fixed inset-0 bg-[#4E3629]/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white border-4 border-[#F0E3D3] rounded-3xl shadow-2xl p-5 max-w-4xl w-full flex flex-col gap-4 max-h-[85vh]">
+                
+                <!-- Modal Header -->
+                <div class="flex justify-between items-center border-b-2 border-[#F0E3D3] pb-2">
+                    <h3 class="font-extrabold text-sm text-[#4E3629] serif-title uppercase tracking-wider">
+                        <i class="ti ti-cards text-[#FF8DA1] mr-1"></i> 手動挑選探索牌卡
+                    </h3>
+                    <button @click="closeCardPicker" class="text-stone-400 hover:text-stone-900 text-base"><i class="ti ti-x"></i></button>
+                </div>
+
+                <!-- Custom Step selector -->
+                <div class="flex gap-3 p-1 bg-[#FFF9F2] rounded-xl self-start text-xs font-bold border border-[#F0E3D3]">
+                    <button 
+                        @click="pickerStep = 'word'" 
+                        class="px-4 py-1.5 rounded-lg transition-all"
+                        :class="pickerStep === 'word' ? 'bg-white text-[#4E3629] shadow-sm' : 'text-stone-400'"
+                    >
+                        步驟 1: 選個字卡框 ({{ selectedWord || '尚未選' }})
+                    </button>
+                    <button 
+                        @click="pickerStep = 'image'" 
+                        class="px-4 py-1.5 rounded-lg transition-all"
+                        :class="pickerStep === 'image' ? 'bg-white text-[#4E3629] shadow-sm' : 'text-stone-400'"
+                    >
+                        步驟 2: 選個圖核心 ({{ selectedImgNum ? '#' + String(selectedImgNum).padStart(2, '0') : '尚未選' }})
+                    </button>
+                </div>
+
+                <!-- Search box -->
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input 
+                        v-model="pickerSearch" 
+                        type="text" 
+                        :placeholder="pickerStep === 'word' ? '搜尋 88 張詞彙字卡...（例：恐懼、習慣、成功）' : '搜尋 88 張心智圖卡特徵...（例：彩虹、階梯、哭泣）'" 
+                        class="w-full pl-8 pr-4 py-2 text-xs bg-[#FFF9F2] border-2 border-[#F0E3D3] rounded-xl outline-none focus:border-[#FF8DA1] focus:bg-white text-[#4E3629]"
+                    />
+                </div>
+
+                <!-- Steps container scrolls -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 min-h-[250px]">
+                    
+                    <!-- STEP 1: Word Grid -->
+                    <div v-if="pickerStep === 'word'" class="space-y-4">
+                        <div class="flex flex-wrap gap-1.5">
+                            <div 
+                                v-for="word in filteredWords" 
+                                :key="word" 
+                                @click="selectPickerWord(word)"
+                                class="px-3 py-1.5 border-2 rounded-xl text-xs font-bold cursor-pointer transition-all"
+                                :class="selectedWord === word ? 'bg-[#FF8DA1] text-white border-[#FF8DA1] shadow-sm' : 'bg-white border-[#F0E3D3] text-[#4E3629] hover:bg-[#FFF9F2]'"
+                            >
+                                {{ word }}
+                            </div>
+                        </div>
+
+                        <!-- Blank cards / Self custom word inputs -->
+                        <div class="border-t-2 border-[#F0E3D3] pt-3">
+                            <label class="text-[9px] font-black text-[#9E8675] block mb-1.5">💡 想自己寫字卡？在這裡輸入自創字：</label>
+                            <div class="flex gap-2">
+                                <input 
+                                    v-model="pickerCustomWord" 
+                                    type="text" 
+                                    placeholder="例如：溫柔的星空 (自創空白卡)" 
+                                    class="text-xs bg-[#FFF9F2] border-2 border-[#F0E3D3] rounded-xl px-3 py-1.5 outline-none w-64 text-[#4E3629]"
+                                />
+                                <button 
+                                    @click="selectPickerWord(pickerCustomWord)" 
+                                    class="bg-[#4E3629] text-white text-xs px-4 py-1.5 rounded-xl font-bold"
+                                >
+                                    套用自創詞
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Image Cards Grid -->
+                    <div v-else-if="pickerStep === 'image'" class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-8 gap-2.5">
+                        <div 
+                            v-for="imgCard in filteredImageCards" 
+                            :key="imgCard.num"
+                            @click="selectPickerImage(imgCard.num)"
+                            class="border-2 rounded-xl p-1.5 cursor-pointer bg-[#FFFBF7] transition-all text-center"
+                            :class="selectedImgNum === imgCard.num ? 'border-[#FF8DA1] bg-[#FFF9F2]' : 'border-[#F0E3D3] hover:border-[#FFB5C2]'"
+                        >
+                            <div class="aspect-[2/3] w-full bg-white rounded overflow-hidden mb-1 relative border border-stone-200">
+                                <img :src="imgCard.url" class="w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer" @error="handleImgFallback">
+                                <span class="absolute top-1 left-1 bg-black/50 text-white text-[8px] px-1 rounded font-mono">{{ String(imgCard.num).padStart(2, '0') }}</span>
+                            </div>
+                            <span class="text-[9px] text-[#4E3629] font-bold block truncate" :title="imgCard.name">{{ imgCard.name }}</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex justify-between items-center border-t-2 border-[#F0E3D3] pt-3 flex-wrap gap-2">
+                    <span class="text-xs text-[#9E8675] font-bold">目前選擇: {{ selectedWord ? '『' + selectedWord + '』' : '尚未選擇字' }} ＋ {{ selectedImgNum ? '圖卡 #' + String(selectedImgNum).padStart(2, '0') : '尚未選擇圖' }}</span>
+                    <div class="flex gap-2">
+                        <button @click="closeCardPicker" class="bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-bold px-4 py-1.5 rounded-lg transition-all">取消</button>
+                        <button 
+                            @click="savePickerCombination" 
+                            :disabled="!selectedWord || !selectedImgNum"
+                            class="bg-[#FF8DA1] hover:bg-[#E05C5C] disabled:opacity-50 text-white text-xs font-bold px-5 py-1.5 rounded-lg transition-all shadow-sm"
+                        >
+                            放上引導桌面 ✨
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="py-3 bg-[#4E3629] text-center text-[10px] text-white/50">
+            <span>🌸 OH Card Facilitator Simulator (v0.2 暖心可愛版) 🌸 陪伴您精進引導對話。</span>
+        </footer>
+
+    </div>
+
+    <!-- MAIN INTERACTIVE MODULE CONTROLLERS -->
+    <script>
+        const { createApp, ref, computed, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                // Config keys
+                const apiKey = ref('');
+                const sessionQuestion = ref('');
+
+                // Application Stage Management
+                const trainerStage = ref('setup'); // 'setup' | 'chat' | 'feedback'
+                const selectedProfileId = ref(null);
+                const activeClient = ref(null);
+
+                // Dialog and chat consoles
+                const messages = ref([]);
+                const inputMessage = ref('');
+                const isThinking = ref(false);
+                const chatContainer = ref(null);
+
+                // Simulation state values
+                const hiddenState = ref({
+                    trust: 10,
+                    defensiveness: 90,
+                    openness: 10,
+                    relationshipDepth: 10
+                });
+                const internalThought = ref('');
+
+                // Interactive Sandbox Card
+                const currentSandboxCard = ref(null);
+
+                // Card Picker Modals
+                const showPickerModal = ref(false);
+                const pickerStep = ref('word'); // 'word' | 'image'
+                const pickerSearch = ref('');
+                const selectedWord = ref('');
+                const pickerCustomWord = ref('');
+                const selectedImgNum = ref(null);
+
+                // Evaluation results
+                const isEvaluating = ref(false);
+                const feedbackData = ref(null);
+
+                const clientProfiles = [
+                    {
+                        id: 'xiaomei',
+                        name: '小美',
+                        age: 35,
+                        title: '做事有效率但沒耐心的小主管',
+                        presentedIssue: '在公司我常忍不住打斷動作慢的部屬。跟男友很想結婚，但見面常常因為各種生活細節吵架。大家都說我不了解他們，但我也覺得沒人能懂我，真的很累。',
+                        coreIssue: '童年家庭不和睦，內心其實極度缺乏安全感、渴望被愛、渴望建立一個溫馨的家、害怕被拋棄。但防禦模式表現為控制欲強、急躁、不喜歡被質疑，容易以強硬武裝把愛的人推遠。',
+                        difficulty: '中等',
+                        imageRef: 'ChatGPT Image 2026年7月7日 下午10_47_02.png',
+                        quote: '「我只是想要一個好好的家，有這麼難嗎？」',
+                        initialState: { trust: 12, defensiveness: 80, openness: 15, relationshipDepth: 10 }
+                    },
+                    {
+                        id: 'yueyue',
+                        name: '月月',
+                        age: 18,
+                        title: '內向、心思細膩且退讓的少年',
+                        presentedIssue: '高三剛畢業，不知道未來要做什麼。家裡的姊姊們都很強勢，有什麼事情，我寧願退讓也沒關係。反正，大家可能也覺得只是我的藉口吧，常把話放在心裡。',
+                        coreIssue: '排行老三，在長期缺乏發言權的環境下學會了壓抑自己的需求、隱藏想法。青春期敏感退縮、害怕人際衝突與被誤解。不善言辭、渴望被默默懂，若引導師急躁逼問，他會退縮。',
+                        difficulty: '普通',
+                        imageRef: 'ChatGPT Image 2026年7月7日 下午11_18_14.png',
+                        quote: '「有些話，如果能被懂，就不需要說太多了。」',
+                        initialState: { trust: 10, defensiveness: 90, openness: 10, relationshipDepth: 10 }
+                    },
+                    {
+                        id: 'takeshi',
+                        name: '信義金城武',
+                        age: 55,
+                        title: '典型大男人主義的理性主管',
+                        presentedIssue: '我覺得我做的一切都是為了這個家好，但兒女長大後越來越不想與我接觸，妻子對我也是理不理的。一有事我只想理性解決，他們卻嫌我不關心感受。',
+                        coreIssue: '性格壓抑專制、高面子、高自尊、重理性、情感隔閡。習慣以物質與權力控制表達愛。真正的痛點是害怕失敗、害怕失去在家庭的主導權與地位、內心非常孤獨卻完全不知道如何表達愛。',
+                        difficulty: '困難',
+                        imageRef: 'ChatGPT Image 2026年7月7日 下午10_45_40.png',
+                        quote: '「我一輩子拚命工作都是為了家，錯在哪？」',
+                        initialState: { trust: 8, defensiveness: 95, openness: 8, relationshipDepth: 5 }
+                    },
+                    {
+                        id: 'bigbro',
+                        name: '張大哥',
+                        age: 65,
+                        title: '退休後失去生活重心的傳統大哥',
+                        presentedIssue: '我成家立業買房什麼都有了，人生唯一的盼望就是抱孫。結果兒女居然說不婚不生。一講這個就吵架。現在退休了，覺得整個人空空的，不知道在幹嘛。',
+                        coreIssue: '傳統世俗價值觀、對自我的覺察極低。缺乏自我探索經驗，習慣活在別人的期待中。痛點是無法適應退休後生活重心的失落、以及失去對下一代人生的控制感。',
+                        difficulty: '普通',
+                        imageRef: 'ChatGPT Image 2026年7月7日 下午10_38_22.png',
+                        quote: '「結婚生子，本來就是最天經地義的事情啊。」',
+                        initialState: { trust: 10, defensiveness: 85, openness: 10, relationshipDepth: 8 }
+                    }
+                ];
+
+                const FILE_IDS = {
+                    '01':'1p6TZe_4t5BIUz787AIBJi8bm_5_AdpOp','02':'18tp8Lmf2ilYQ-0YJmLA0F0awbP_BZVAQ',
+                    '03':'1ZOZInwgR9rBfCVRahRy3lgTv0gnlHpjo','04':'1lAQouDBgp6Lbn1JOynU8uoU0bFY4XYKS',
+                    '05':'1kqnY0kck1VGL-wRpIbCOhYWDNt2A4_KQ','06':'1odNdsfNRAVOlgSJZfYFNT9_pQ-pzGA1b',
+                    '07':'1YP4kYcIdJV9_QUjqAY8whs93XQS2yxgf','08':'1VwThpd8rh4hgDqEoED8gPOUrWna_FZc-',
+                    '09':'1kJaApAOBckPrjV8hq3gGvZZODIg0Y5CN','10':'1up9DAMQ1Kol6oXEnab24kMl8Y0hIGFhU',
+                    '11':'1qgcTVupzML9-EgWoSTc_vVR0Sfdci2kC','11b':'1KlsFWcbaYoeKxsASP-4zRPC9iF6Z9wT3',
+                    '12':'1c4510JEu4VxXFK-YJR3SqqXZSJUsOOr1','12b':'1t8ObPEy3zhLmpJoV5HmuedHMoBsW3LC6',
+                    '13':'1PnWZVBbZ0ayDj_UZ5tjTXAmk_hTZEN-s','14':'1AIBsJhoOjUWRCbSi_KkQMg3pv7-LYgwO',
+                    '15':'1mT_OthJqGdz2vYqh4TEEheAhtOvx6Tnm','16':'1ei8CgVV7DprnCSxt4JihuFNxdPNB7OFF',
+                    '17':'1zAfHqnAuKduAIWcBqnKJF-_TqlTote7N','17b':'11pC4pp--3PMJ_yZJID0Fn1IYgo2_KcPf',
+                    '18':'1K25lIrtVYK3V7yol6cWxYGP5E8euuoS9','18b':'11IO4EaIAXvoa77P84DAQkDNBB6ycOJvJ',
+                    '19':'1nr8VE9ULldgNH4UP7-QwHmuR-gQwqkWy','20':'1wYMpeN1fH1zKY2GkEk_xw4Hj-GFrtz4b',
+                    '21':'1mOYJx-K12Eg-nM290fvwbsiZRXAwzi_s','22':'1swvE_o82jToFo-oSO50MoPcwI8dR7eYe',
+                    '23':'1Le2MoknwLPfqcPAWiERmuSZ6TobG9-89','24':'124e_n0YmCcRZK6A2RUoFd-4jkOXYhwZs',
+                    '25':'1qHGtQtI43ABw_dWc6SEZIkaQ1rvgzSLn','26':'14rHe_Tr2iz1Uy1YTOUT7iYnK0itPBF3Z',
+                    '27':'1AWAuLXozNHfpmp1Xp3aVBiu_wyydve8z','28':'1ugyDT880kd23GNYgdLGuBM0QdgPZ197M',
+                    '29':'1JDCmB9e9Z1RiRluZ-8mPsprpCnEfNmnn','30':'1-Ey9vG3-zH_GxEQ1Gjpo4Qp58tZVpqu-',
+                    '31':'1fjHaceF4_F_d7qj5Jhu5fvRQh_ep3z92','32':'1FkJAx_BsO3AHU2MdcZ7tezmuQtzOM1OZ',
+                    '33':'1vkeE6_l45ivu3yhS2zmSxEgdQWq_LsiS','34':'1_IUo0tFADQon8WVHCDzGseEfFob9dOEz',
+                    '35':'12jPGV3lqhLUbehgw2tNQz7C7-wkEuzM8','36':'146rFSQcEOXrGzHUI4og4IJHZbJrJvF1R',
+                    '37':'1Gw7IjV7or_mcRoyMKERCCZwwKEPiy1fl','38':'1yg2k-0IkbcegN8C8TpRQDiCE9gBP7Fzr',
+                    '39':'1COmDfhUcAcHRKsfSSVFgC8tI6PNCc22f','40':'1AjLapV4iO8pRdHKntQkg2owIxyT-Ro9n',
+                    '41':'1Oa2y49gSPGiOx4O6Gl-0ReGenpg1Cu_V','42':'1pC0CTKTuTWyPfjYXWLXzTjfW3H8j8C-f',
+                    '43':'1L1m1hZFhFgtF9bLr_hp3ASN2zGbScuHy','44':'1slSXVnjP-VctPDdKGHSZcqVtj-ecgK8M',
+                    '45':'1Ba1UPulpGChCy3WpIVBu_VEsug5PNuEN','46':'1EID-hwZ5jRTPKz42row2T5yWgKXFm9fw',
+                    '47':'1O1VhnfS-mLdHtoMgBtinhBQgWxFcW23K','48':'17oxXG7CMHavpvjmkkZdGcbEuVLKQnoT3',
+                    '49':'1O6DZ4-iUhAxXExJFEefWq3jwcM2cpYEK','50':'1KnEPbLW3dHy5eUeUGSXJITi2cYP_LyLc',
+                    '51':'197UdziN1lpJ8paDOWC7RjpP3oZ7Bb--b','52':'1Ppp_OHlk0ISr7GWfkk0IeovfjH2S80c7',
+                    '53':'1P9KkoDY-hlRp_f-BeWlCAj0ATOFNXVNx','54':'19rfbmWmIzKA-yny5jx8Il_1SJftUyY2u',
+                    '55':'16lmgTvTuwaD1nf6iQq5WTL3JYDBRvGDg','56':'143jMf841AxA6RUsdMNAQaeqOWP5Cn401',
+                    '57':'1jFv9ZMrM6pQAv0y2iQxorTDKtAT1f2uh','58':'1c-OEhgEJW0KC2qulpM6uBUaKJP4VrRut',
+                    '59':'1Zc6o9E-Bxri1lHQsueeqzDjBYPwv2IMb','60':'1k4d9iCeYg3YjzWIy2DVserWTNpp8nDLa',
+                    '61':'1wEabW_Nhp52wg41c1zoCCaRZDwqZb0vt','62':'19TMeFdXqOtlA_o_2LiNL9WIIrOXUppNa',
+                    '63':'1v4UJxTXxbd4zmDcGUIrfxLRWc5eafmb8','64':'1Y1OBYFR1aQaFjYSVhG-im4_OiLjOPjHI',
+                    '65':'1_6UMxQeGxKC408YhIwYL3iOWcn-F-hC5','66':'1Zzzg5bActwnj5Uy5wEwLjbJPVYVuLeg-',
+                    '67':'1Hnsbp6UW8bE4qehFgRrAAAu6o4tUnUrB','68':'1Aym54HJZ9tYnNh7Q4NimsnabRlC75kdY',
+                    '69':'1MxvH27iw3yuwHEmIdA1rHLRxyVIlgHJr','70':'1hNCwWs906kLkZontL0deM1AjuX559OQf',
+                    '71':'10bm27vxbL4AHG8arsRG5u5MPCzX736KR','72':'1l2soSiiH_YGR94xe80nbm3PhMXBhSxOI',
+                    '73':'1pxIKS1LbRvkc7dmICZn9IdwcKTdn3j5Q','74':'1icISkEPQ3mbl2PKaUiA3-nR417MsdWdp',
+                    '75':'13pGe6U4myLmEc2La6rSCG3EBoRwA8CXM','76':'1KOEmSrmEFdhhPcMK2CehI_dH98X4w80R',
+                    '77':'1wy-puKfrJwgeV3mn53N7ZhuKD-soxZat','78':'1gBa-lZxf656qSLdsec-jncgi6hYKziRp',
+                    '79':'1tW9p4RhzeMWqaZapzPTxmYD_zWlcjILJ','80':'1HJUgCKoVvviiEq1aLHcks8wwFq7B-bD-',
+                    '81':'1jA0e-CKgL9w0FPSTmFEA1ZuOyx0SVWu9','82':'1MZHER8mTIJzJWHTImxQJirDsigVA7eRQ',
+                    '83':'1-Q_tQpEpmajPD-PyB93K4eeyRswjoxL1','84':'103mKAx9Z1tdjMQ2jsVAlnwS_oRJ9ZzSA',
+                    '85':'1ITH-zoYjOxkyk6bO14v6LjuinxQWy_KV','86':'1-9gNm7-jaJrJMW6mR-3HVm34wpY4d_ja',
+                    '87':'18er1lQaDXm8lnUsjgPTxrlBeJVwXNm2L','88':'1aRM6Nocr_XAkuAHclRs7GpH5paB7OlZl'
+                };
+
+                const KEYWORDS_DB = {
+                    1:{name:'繩索拉扯的手',pos:'穩扎穩打、齊力斷金、不動搖',neg:'角力、束縛、拉扯、僵持不下、不妥協',visual:'兩隻手各拿著繩結兩端拉扯，背景鮮黃'},
+                    2:{name:'高舉光芒的主角',pos:'勇往直前、引領、活力、自信、奔放',neg:'自滿、衝動、思慮不周、抗議、造反',visual:'一人披斗篷背對站立，右臂高舉黃光，背景朱紅'},
+                    3:{name:'時間行事曆與手錶',pos:'守時、規劃、紀律、按表操課',neg:'曠日費時、拖延、焦慮、時間壓迫感',visual:'一本月曆攤開在桌上，旁邊有一隻手錶'},
+                    4:{name:'打翻水杯的手',pos:'打掉重練、破除舊習、打破僵局',neg:'粗心大意、懊惱、失控、驚慌、大意',visual:'一隻手打翻杯子，水灑落在桌面上'},
+                    5:{name:'並肩而坐的長椅老人',pos:'同理、傾聽、支持、陪伴、老來伴',neg:'孤老、沈默無語、落寞、悲傷、冷漠',visual:'兩位老人並肩坐在公園長椅上，背景綠地'},
+                    6:{name:'紅色抗議旗幟的人群',pos:'據理力爭、團結一心、歡迎列隊、熱情熱烈',neg:'紛爭、無法溝通、抗爭、憤怒、開戰',visual:'一群人舉著紅色旗幟和標語走在街上'},
+                    7:{name:'一疊鈔票與手',pos:'資源豐富、自給自足、財富流通、節儉',neg:'吝嗇、守財奴、過路財神、資源分配不均',visual:'一隻手拿著一疊鈔票，背景灰白'},
+                    8:{name:'桌面排列的牌卡',pos:'掌握方向、主導權、面對未知的希望感',neg:'猶豫不決、舉棋不定、惶惶不安、畏縮',visual:'兩隻手在桌面排列藍色卡片或紙條'},
+                    9:{name:'赤裸交疊擁抱的人',pos:'敞開自我、本能、放鬆、享受自我、親密',neg:'放縱、無視他人存在、羞恥、赤裸',visual:'兩個赤裸人形交疊擁抱，紅色背景'},
+                    10:{name:'黑暗中發光的眼睛',pos:'覺察、炯炯有神、眼光獨到、專注',neg:'偷窺、盲點、不舒服的關注、陰暗面、居心叵測',visual:'一張陰暗臉孔露出兩顆發光的黃色眼睛'},
+                    11:{name:'抓在小孩肩膀的手',pos:'支持、安撫教導、關愛有加、溫柔照顧',neg:'責備、掌控欲、碎碎念、處罰、限制自由',visual:'一名婦人摟著小孩站立，深藍背景'},
+                    12:{name:'吧台前抓手制止的手',pos:'助人、保護救援、強力支持',neg:'操控、掙扎、壓制無法動彈、水深火熱',visual:'兩人並肩坐在吧台前，背對鏡頭，抓著手'},
+                    13:{name:'沉浸彈吉他的人',pos:'宣洩、調頻、自得其樂、享受喜樂',neg:'孤芳自賞、無視他人、自以為是',visual:'一人在暖色背景前彈吉他，紅紫色調'},
+                    14:{name:'草地上的幽暗漩渦',pos:'核心、向心力、深度連結、轉變',neg:'摧毀、混亂、捲入困境、暈頭轉項',visual:'一個藍綠色漩渦盤旋於夜空草地之上'},
+                    15:{name:'低著頭站立的驢子',pos:'勤勞、盡忠職守、忙裡偷閒、無怨無悔',neg:'疲倦不堪、沈重壓力、停滯不前、任人擺佈',visual:'一隻驢子站在淡藍背景前'},
+                    16:{name:'立體灰色方塊與棋盤',pos:'創造力、獨特、多元空間',neg:'自我設限、隱藏、暗無天日、約束',visual:'一個綠黃格紋棋盤上立著灰色立體方塊與木箱'},
+                    17:{name:'街角等待的三個背影',pos:'齊心一致、結伴同行、夥伴同肩併濟',neg:'相依為命、沈默、窒礙難行、迷茫',visual:'三個孩子並肩站在街角望向同一方向'},
+                    18:{name:'金色的殿堂大門',pos:'心之所向、前途無量、目標明確、高升',neg:'遙不可及、步履蹣跚、疲累不堪、路途壓迫',visual:'一道白色階梯通往紫色牆面的金色門口'},
+                    19:{name:'鋪著綠被的樸素單人床',pos:'寧靜感、清新舒爽、一絲不苟、獨處自在',neg:'孤單、無菌隔離、單調無趣、空間狹窄',visual:'一張綠色床鋪放在臥室裡，旁邊有檯燈'},
+                    20:{name:'黑繩綁縛的木柱',pos:'一支獨秀、頂天立地、姻緣一線',neg:'束縛、動彈不得、一意孤行、桎梏',visual:'一根木柱被黑色繩索層層纏繞'},
+                    21:{name:'喝著悶酒與聊天的吧台',pos:'放鬆、享受獨處、氣氛悠閒、自在',neg:'落寞、孤僻傲慢、不合群、隔牆有耳',visual:'吧台椅上，一個人喝酒，另一邊酒保聊天'},
+                    22:{name:'持著金色鎖匙開門的手',pos:'開啟、解鎖、希望感、尋求新契機',neg:'刺探隱私、手握把柄、偷窺、不安全感',visual:'一隻手拿著鑰匙，要打開門。'},
+                    23:{name:'倚著門框看風景的人',pos:'恬淡、寧靜致遠、享受安詳、低調行事',neg:'孤獨無助、落寞、寂寞悲傷、原地踏步',visual:'一人站在深藍門框前望著窗外景色'},
+                    24:{name:'木頭圍欄牧場',pos:'閒適、耐心順從、無拘無束、隨性',neg:'框架制約、單調、受限被阻、圈養',visual:'木製圍欄圍住一片白色區域'},
+                    25:{name:'低頭哺乳的母親',pos:'慈愛滋養、血脈相連、呵護、愛與安全感',neg:'掠奪、目光如豆、淡薄感情、窒息母愛',visual:'一位母親低頭哺乳懷中嬰兒，藍紫色背景'},
+                    26:{name:'病床上打點滴的人',pos:'康復、好好休息、放鬆釋放',neg:'性命垂危、無力、虛弱、不如意、無可奈何',visual:'一人躺在病床上打點滴，淡綠背景'},
+                    27:{name:'怒吼裂嘴的大貓獅子',pos:'恪盡職守、安全守護、實力展現',neg:'心生畏懼、危機四伏、防衛、不容靠近',visual:'一隻黃色大貓張嘴露牙站在山谷間'},
+                    28:{name:'紅衣行進的列隊',pos:'一致、共識、團結、訓練有素',neg:'僵化、角力、粗糙、抗拒、不妥協',visual:'一列穿紅衣的隊伍持旗行進在道路上'},
+                    29:{name:'展翅欲飛的灰色海鳥',pos:'鹏程萬里、無限希望、展翅翱翔',neg:'高處不勝寒、傲慢孤獨、一意孤行',visual:'一隻灰色海鳥展翅飛翔於淡藍天空'},
+                    30:{name:'拱門下兩位神職人員',pos:'相互理解、信任、和諧和平、齊心協力',neg:'心口不一、虛情假意、同溫層取暖',visual:'兩位披深藍長袍的人並肩站立於拱門下'},
+                    31:{name:'掩面低頭哭泣遮臉的人',pos:'守口如瓶、沉思、尋求安撫',neg:'自卑、委屈、悲傷、無顏見人、防線崩潰',visual:'一人雙手掩面、低頭遮臉，橙黃色背景'},
+                    32:{name:'凌亂散落紙張的辦公室',pos:'認真負責、有規矩、掌控力好',neg:'公事公辦、一事無成、呆板、毫無感情',visual:'一個空間俯視圖，桌椅文件散落'},
+                    33:{name:'樹下群聚的黑螞蟻群',pos:'生機盎然、生生不息、合作無間、資源豐富',neg:'焦頭爛額、混亂不安、不知所措、無頭蒼蠅',visual:'草地上一棵樹下密布許多黑色小螞蟻'},
+                    34:{name:'平靜無人的沙灘海岸',pos:'遼闊、風平浪靜、心曠神怡、浩瀚',neg:'空洞空虛、沒有邊界感、無風無浪',visual:'一片沙灘延伸向海，藍天白雲，寧靜空曠'},
+                    35:{name:'尺和紅色起伏折線',pos:'專業、掌握精準、計劃縝密',neg:'斤斤計較、算計、吹毛求疵、不知變通',visual:'一隻手拿著尺對著畫了紅色折線的方格紙'},
+                    36:{name:'紅色畫筆揮灑',pos:'勇敢突破、突破框架、奮力一擊',neg:'衝突、強大壓迫、蛮橫、撞擊、失控',visual:'黑白條紋背景中一支畫筆沾著鮮紅顏料'},
+                    37:{name:'隔公車窗揮手告別',pos:'祝福前進、互道珍重、依依告別',neg:'離情依依、不捨難分、錯過彼此、傷感',visual:'兩個藍色的人，隔著公車窗揮手道別'},
+                    38:{name:'跨過大河的雨後彩虹',pos:'全新開始、雨過天晴、希望彩虹、美不勝收',neg:'曲折、遙遙無期、偶發、有距離',visual:'一道彩虹橫跨綠色河谷上方的橋'},
+                    39:{name:'溫暖散發光芒大太陽',pos:'和煦溫暖、陽光普照、充滿希望',neg:'高高在上、唯我獨尊、過度炎熱',visual:'一顆黃色太陽高掛在淡藍天空與綠色山丘之上'},
+                    40:{name:'DEAD END 巷子盡頭路標',pos:'停下、調整休息、另闢蹊徑、忍辱負重',neg:'毫無出路、困獸之鬥、死路一條、絕望',visual:'一條巷子盡頭立著「DEAD END」死路標誌'},
+                    41:{name:'走廊上寫著 hot 的門扉',pos:'大膽獨立、自我陶醉、一派輕鬆',neg:'放蕩、迷茫、猶豫、看不清、不自重',visual:'一人站在粉紅走廊望向打開的房門'},
+                    42:{name:'聖壇上發光的星形圖騰',pos:'寧靜真誠、靈性目標、神聖莊嚴、儀式感',neg:'虛幻、不真實、限制信念、怪力亂神',visual:'一本書放在藍色檯座上，上方懸浮著發光星形'},
+                    43:{name:'並肩站立看海的背影',pos:'相互依偎、海闊天空、關愛扶持',neg:'同行異夢、寂寞、關係糾纏、憂鬱',visual:'兩人背對站立望向海灘，一人藍衣一人綠衣'},
+                    44:{name:'寫著 GO 的綠色信號燈',pos:'一路暢通、綠意盎然、隨心所欲、前行',neg:'不顧警告、危機重重、衝動前進',visual:'一個綠色交通號誌燈顯示綠燈「GO」'},
+                    45:{name:'玩溜滑梯和鞦韆的小孩',pos:'童真有趣、赤子之心、天真、盡情玩耍',neg:'任性隨意、吃著碗裡看著鍋裡、自私自利',visual:'兩個孩子在公園玩滑梯與鞦韆，背景綠地'},
+                    46:{name:'吶喊驚恐睜大的雙眼',pos:'驚訝、出人意表、喜劇荒謬',neg:'失控、極度驚慌、憤怒驚悚、無法言語',visual:'一張驚恐睜大眼睛、張嘴吶喊的臉孔，紅色背景'},
+                    47:{name:'一隻手持斧頭砍另一隻手',pos:'痛定思痛、除舊佈新、下決心、捨棄',neg:'一刀兩斷、慘烈、血腥、殘暴自殘',visual:'一隻手拿著斧頭砍向另一隻手。'},
+                    48:{name:'茂密看不到盡頭的綠樹林',pos:'無限生機、生氣盎然、蘊藏豐富資源',neg:'眼前茫然、藏污納垢、迷宮森林、深不可測',visual:'一片茂密綠色樹林佔據整個畫面'},
+                    49:{name:'大人蹲下和小孩說話',pos:'細心傾聽、慈愛、循循善誘、俯就',neg:'溝通不對等、居高臨下、教訓警告',visual:'一位大人蹲下，另一個人像小孩在說話聊天'},
+                    50:{name:'一條黑色纏繞的長鞭',pos:'直白、一呼百應、威嚴力量',neg:'受掌控、不聽使喚、緊繃逼迫、粗暴',visual:'一條黑色繩索或鞭子盤繞在紫色背景上'},
+                    51:{name:'草叢深處亮綠色蛇',pos:'警覺、深藏不露、靈活敏捷',neg:'狡猾、威脅、恐嚇、陰險、不寒而慄',visual:'一條蛇盤繞在黃綠色草叢間'},
+                    52:{name:'床上疲憊休息路標 YIELD',pos:'陪伴、心靈相通、共度甘苦',neg:'不合群、意見分歧、爭執衝突、不甘願',visual:'一人躺臥在床上望著窗外交通標誌'},
+                    53:{name:'綠樹和五朵亮麗紅花',pos:'陽光普照、欣欣向榮、活力無限、美滿',neg:'唯我獨尊、分別心、虛有其表',visual:'草地上一棵樹旁開著五朵紅花'},
+                    54:{name:'裂著牙的灰骷髏頭與墳地',pos:'大徹大悟、解脫釋放、回歸平靜',neg:'陰森、瀕死不安、恐懼、威脅',visual:'一個沒有眼睛的灰白骷髏頭或是鬼'},
+                    55:{name:'四個人交談與旁觀者',pos:'期待參與、交流、尋求群體融入',neg:'冷眼旁觀、不合群、被排擠孤立',visual:'四人並肩站立交談，旁邊有一人靠近觀看'},
+                    56:{name:'穿白袍的醫生與坐著的病人',pos:'專業照料、支持、關懷',neg:'無助焦慮、被掌控、不情願的真相',visual:'病人坐在旁交叉雙腿，醫生穿白袍打扮'},
+                    57:{name:'雙腳與紅色背景鎖鏈',pos:'完全交付、自由坦蕩、力量釋放',neg:'束縛不自由、防備脆弱、羞恥感',visual:'一雙赤裸的腿被繩索或鏈條綁住'},
+                    58:{name:'綠人背後拿刀刺向藍人',pos:'柳暗花明、一針見血、意圖清晰',neg:'暗算、背叛、不光明磊落、背後傷人',visual:'綠色的人從背後拿刀刺向前面藍色的人'},
+                    59:{name:'操場賽跑的兩個人 5和2',pos:'良性競爭、同場行進、步伐穩健',neg:'惡性角力、猜忌、力不從心、受打擊',visual:'兩名穿背心的人在跑道上賽跑'},
+                    60:{name:'對稱兩條黑弧線和中央黑點',pos:'平衡、中庸、流暢流動、極簡美',neg:'對立、雙重壓迫、針鋒相對',visual:'一張全白卡片，中央僅有兩條對稱曲線與黑點'},
+                    61:{name:'綠色清新浴室與浴缸',pos:'放鬆、洗滌、隱私、安心舒適',neg:'封閉狹隘、潮濕、暗自神傷',visual:'一間綠色調浴室廁所場景，有浴缸與窗景'},
+                    62:{name:'敬禮的藍制服警員',pos:'安全保障、遵守紀律、有人把關',neg:'受壓制、受限警告、教條框限',visual:'一名穿藍色制服的警察站在街上舉手敬禮'},
+                    63:{name:'色彩斑斕的漸層人形剪影',pos:'多元、包容廣大、向外延伸力量',neg:'分裂、自我混亂、缺乏中心、不安全感',visual:'一個剪影般的人形以紫紅漸層呈現，背景深藍'},
+                    64:{name:'將水壺倒水進入杯中',pos:'分享、傳承滋養、細水長流',neg:'施壓、不均、施與受的失衡',visual:'一隻手倒水，從水瓶/水壺倒入玻璃杯中'},
+                    65:{name:'執筆在紙張書寫的手',pos:'傾訴、擬定計畫、善於表達、發揮',neg:'舉棋不定、無從下筆、難以啟齒',visual:'一隻手握著筆在書寫畫畫，土黃色調'},
+                    66:{name:'長桌上看書的三個孩子',pos:'發奮、學習專注、充實、求知欲強',neg:'枯燥乏味、壓抑自由、被迫接受框架',visual:'圖書館裡幾個孩童坐在長桌前看書'},
+                    67:{name:'手拉手轉圈跳舞的紅綠人',pos:'歡樂圓滿、和諧和樂、共同行進熱情',neg:'爭奇鬥艷、互不相讓、關係牽制',visual:'兩人在黃綠色背景前手拉手轉圈跳舞'},
+                    68:{name:'縮在藍色幽暗角落的小人',pos:'安全角落、享受獨處、自得其樂',neg:'孤僻、害怕傷害、退縮、求助無門',visual:'一個藍色的人蜷曲身體，縮在角落'},
+                    69:{name:'道路上同行聊天的兩個人',pos:'交流、共同行進、化解心結、陪伴',neg:'同行異夢、被迫同路、沉重感、防備',visual:'兩人在路上一起往前走，像是在邊走路邊對話'},
+                    70:{name:'農夫彎腰在田間播種',pos:'默默耕耘、持之以恆、期待豐收',neg:'徒勞無功、來日方長、疲憊不堪、不知何時收穫',visual:'一名農夫穿藍衣在土黃色田地上彎腰勞作'},
+                    71:{name:'垂釣魚鉤與潛水的人',pos:'願者上鉤、探索資源、尋找突破口',neg:'誘惑重重、危機、虎視眈眈、猶豫不決',visual:'一個潛水員在藍色海域中，中間垂吊著一個魚鉤'},
+                    72:{name:'立姿雙手交疊的護士',pos:'專業盡責、自我要求高、愛心支持',neg:'冰冷防禦、冷漠死板、被動應付',visual:'一位穿白色制服的護士站立，黃綠背景'},
+                    73:{name:'夜空中月亮與大片亮星',pos:'星夜許願、寧靜致遠、安詳、珍惜眼前',neg:'月黑風高、孤獨迷惘、看不清方向',visual:'深藍夜空中懸著月亮與星星，下方是深色地面'},
+                    74:{name:'餐盤中一塊肉的桌面',pos:'豐富餐點、享受當下、獨享安逸',neg:'空洞感、不滿、欲求不滿、孤單一人',visual:'一張餐盤擺在木桌上，有肉菜椅與餐具'},
+                    75:{name:'兩個分岔道路背對而行的人',pos:'新起點、各奔前程、獨立自強、和平告別',neg:'分道揚鑣、感情疏遠、意見分歧、不歡而散',visual:'兩人分別走向不同的岔路方向，有兩個箭頭'},
+                    76:{name:'燃燒壁爐與兩張舒適沙發',pos:'和諧溫暖、放鬆沉澱、回到避風港',neg:'熱度不足、焦躁、平淡乏味、孤冷',visual:'壁爐裡燃燒著火焰，旁邊散落物品，兩張藍色椅子'},
+                    77:{name:'深情擁抱的紅綠兩個人',pos:'全然支持、真愛、共感同理、擁抱',neg:'糾纏、透不過氣、不得不從、壓迫阻抗',visual:'兩人緊緊擁抱在一起，一穿紅衣一穿綠衣'},
+                    78:{name:'沙灘上爬向大海的烏龜',pos:'慢工出細活、與世無爭、堅持方向',neg:'行動遲緩、孤軍奮鬥、遙不可及',visual:'一隻棕色烏龜緩慢爬行於淺色沙地'},
+                    79:{name:'在黑板前授課的老師',pos:'傾囊相授、學以致用、啟迪、愉快吸收',neg:'古板灌輸、枯燥、權威威脅、有距離感',visual:'一人坐在教室講桌前，下面有三位學生'},
+                    80:{name:'大人牽著小孩走在路上的手',pos:'提攜、手把手領進、愉悅同伴、陪伴',neg:'被牽著走、拉扯不清、身不由己、不對等',visual:'一位穿綠衣的大人牽著穿紅衣的小孩走在路上'},
+                    81:{name:'審判台上的三位法官',pos:'尋求和解、澄清事實、公正公開',neg:'百口莫辯、權威壓頂、不知所措、受指責',visual:'三位法官端坐審判台上，俯視站立的一人'},
+                    82:{name:'手持圓鏡中照出藍天',pos:'清澈、自我覺察、明鏡高懸',neg:'孤芳自賞、自我否定、不敢直視、逃避自我',visual:'一隻手持鏡框圓形手鏡，鏡面映出藍色天空'},
+                    83:{name:'靠在牆角的土鏟子',pos:'蓄勢待發、休息為了更遠路、準備工作',neg:'劃清、孤軍奮戰、被迫勞動、擱置',visual:'一把鏟子靠在黃色牆邊，旁邊是綠色草地'},
+                    84:{name:'獨自站立街角穿大衣老人',pos:'自得、獨當一面、低調自在',neg:'窮途末路、孤苦無依、落魄、寒冷淒涼',visual:'一位戴帽穿長大衣的老人獨自站立在街頭'},
+                    85:{name:'赤裸遮掩保護下體的手',pos:'最後底線、安全、隱私保護、熱忱所在',neg:'抗拒親密、放不開、不堪、自我壓抑',visual:'女生裸體，雙手擺在大腿旁，保護或開放'},
+                    86:{name:'手持剪刀對著紅藍布料剪下',pos:'乾淨俐落、破釜沉舟、決斷出新、換新開頭',neg:'猶豫、拉扯不斷、一刀兩斷的慘烈、冷血不留情',visual:'一隻手拿著剪刀對著一條布料剪下'},
+                    87:{name:'暴風雨中劈向大地的金雷電',pos:'大地春雷、甘霖、處變不驚的毅力',neg:'晴天霹靂、毀滅打擊、無力抵抗天災',visual:'雷電劈過深色雲層降落於地面'},
+                    88:{name:'裂嘴開口大笑的黃衣小丑',pos:'帶來歡笑、自我奉獻、幽默大度',neg:'強顏歡笑、委屈壓抑、虛假面具、皮笑肉不笑',visual:'一個穿黃衣戴帽的小丑咧嘴大笑，紅色花裝飾'}
+                };
+
+                // Word Cards database (88 fixed + 2 blank cards)
+                const WORD_CARDS = [
+                    "感情","違背","危險","奇妙","羞愧","孩童","男性","厭煩","前進","錯誤",
+                    "誇贊","女人","應該","歡笑","母親","姿態","權利遊戲","希望","專家","罪惡感",
+                    "遊戲","夢想","強迫","改變","退省","不喜歡","破壞","上司","受害者","憎恨",
+                    "付出","吸引","道歉","詼諧","成功","腐朽","外表","敵對","醜陋","生氣",
+                    "失敗","虧欠","丟臉","固執","尷尬","躲藏","等候","習慣","聰明","羞辱",
+                    "謊言","陌生人","喜悅","恐懼","弄巧成拙","奴隸","堅定","攫取","猶豫","愚蠢",
+                    "威脅","憎惡","孤獨","抗拒","攻擊","同性戀","哀傷","依賴","停止","混亂",
+                    "循環","疲憊","開始","幻想","父親","家","執著","分享","放開","愛情",
+                    "恐嚇","壓抑","焦慮","裸體","消除","順應","色情","痛苦"
+                ];
+
+                // Core logic helper functions
+                const cardToFileKey = (num) => String(num).padStart(2, '0');
+                const cardImgUrl = (num) => {
+                    const id = FILE_IDS[cardToFileKey(num)];
+                    return 'https://lh3.googleusercontent.com/d/' + id;
+                };
+
+                // Computed search filters
+                const filteredWords = computed(() => {
+                    const q = pickerSearch.value.trim().toLowerCase();
+                    if (!q) return WORD_CARDS;
+                    return WORD_CARDS.filter(w => w.includes(q));
+                });
+
+                const filteredImageCards = computed(() => {
+                    const q = pickerSearch.value.trim().toLowerCase();
+                    const list = [];
+                    for (let i = 1; i <= 88; i++) {
+                        const meta = KEYWORDS_DB[i];
+                        const keyText = `${meta.name}${meta.pos}${meta.neg}${meta.visual}${i}`.toLowerCase();
+                        if (!q || keyText.includes(q)) {
+                            list.push({
+                                num: i,
+                                name: meta.name,
+                                url: cardImgUrl(i)
+                            });
+                        }
+                    }
+                    return list;
+                });
+
+                // Image fallback url handler
+                const handleImgFallback = (e) => {
+                    // 內嵌 SVG 佔位卡：不依賴外部網域，在 Claude.ai 預覽沙盒中也能顯示
+                    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'>
+                        <rect width='200' height='300' rx='12' fill='%23FAF6EE'/>
+                        <rect x='10' y='10' width='180' height='280' rx='8' fill='none' stroke='%23E6C594' stroke-width='3' stroke-dasharray='6 5'/>
+                        <text x='100' y='135' text-anchor='middle' font-size='40'>🖼️</text>
+                        <text x='100' y='175' text-anchor='middle' font-size='13' fill='%239E8675' font-family='sans-serif'>圖卡預覽無法載入</text>
+                        <text x='100' y='196' text-anchor='middle' font-size='10' fill='%23C4A985' font-family='sans-serif'>(請以卡號對照實體牌)</text>
+                    </svg>`.replace(/\n\s*/g, '');
+                    e.target.onerror = null;
+                    e.target.src = 'data:image/svg+xml;utf8,' + svg.replace(/#/g, '%23');
+                };
+
+                const startSimulation = () => {
+                    const profile = clientProfiles.find(p => p.id === selectedProfileId.value);
+                    if (!profile) return;
+
+                    activeClient.value = profile;
+                    hiddenState.value = { ...profile.initialState };
+                    messages.value = [];
+                    currentSandboxCard.value = null;
+                    internalThought.value = "";
+                    trainerStage.value = 'chat';
+                    feedbackData.value = null;
+
+                    nextTick(() => { scrollChatToBottom(); });
+                };
+
+                const scrollChatToBottom = () => {
+                    nextTick(() => {
+                        if (chatContainer.value) {
+                            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                        }
+                    });
+                };
+
+                // Draw Random Card Combined Action
+                const drawRandomCardCombined = () => {
+                    const randWord = WORD_CARDS[Math.floor(Math.random() * WORD_CARDS.length)];
+                    const randImgNum = Math.floor(Math.random() * 88) + 1;
+                    const meta = KEYWORDS_DB[randImgNum];
+
+                    currentSandboxCard.value = {
+                        word: randWord,
+                        imgNum: randImgNum,
+                        imageUrl: cardImgUrl(randImgNum),
+                        keywords: `${meta.name}, 象徵意義: [正向] ${meta.pos} | [阻抗] ${meta.neg}`,
+                        metaDetails: meta
+                    };
+                };
+
+                // Manual Card Picker Console
+                const openCardPicker = () => {
+                    selectedWord.value = '';
+                    selectedImgNum.value = null;
+                    pickerCustomWord.value = '';
+                    pickerSearch.value = '';
+                    pickerStep.value = 'word';
+                    showPickerModal.value = true;
+                };
+
+                const closeCardPicker = () => {
+                    showPickerModal.value = false;
+                };
+
+                const selectPickerWord = (word) => {
+                    selectedWord.value = word;
+                    pickerStep.value = 'image'; // Automatically step forward to image core selector
+                };
+
+                const selectPickerImage = (num) => {
+                    selectedImgNum.value = num;
+                };
+
+                const savePickerCombination = () => {
+                    if (!selectedWord.value || !selectedImgNum.value) return;
+                    const meta = KEYWORDS_DB[selectedImgNum.value];
+
+                    currentSandboxCard.value = {
+                        word: selectedWord.value,
+                        imgNum: selectedImgNum.value,
+                        imageUrl: cardImgUrl(selectedImgNum.value),
+                        keywords: `${meta.name}, 象徵意義: [正向] ${meta.pos} | [阻抗] ${meta.neg}`,
+                        metaDetails: meta
+                    };
+                    closeCardPicker();
+                };
+
+                // Directly prompt Client for visual narrative
+                const shareCardWithClient = () => {
+                    if (!currentSandboxCard.value) return;
+                    const card = currentSandboxCard.value;
+                    
+                    // Directly letting the facilitator start the opening with a standard prompt
+                    const msgText = `我遞給了你一張牌組，外面四周的字寫著：『${card.word}』。
+                    看著中間的圖，你先不用管文字。告訴我，你在圖卡中第一眼看到了什麼呢？試著看圖說故事，分享你的第一個感覺吧！✨`;
+
+                    messages.value.push({
+                        role: 'facilitator',
+                        text: msgText,
+                        card: card
+                    });
+
+                    currentSandboxCard.value = null; // Clear workbench sandbox
+                    triggerClientResponseLoop();
+                };
+
+                const sendFacilitatorInput = () => {
+                    const txt = inputMessage.value.trim();
+                    if (!txt || isThinking.value) return;
+
+                    messages.value.push({
+                        role: 'facilitator',
+                        text: txt,
+                        card: null
+                    });
+
+                    inputMessage.value = '';
+                    triggerClientResponseLoop();
+                };
+
+                // Build alternating user/assistant history for the Anthropic API.
+                // Consecutive same-role messages are merged to satisfy the alternation rule.
+                const buildAnthropicHistory = () => {
+                    const history = [];
+                    messages.value.forEach(msg => {
+                        const role = msg.role === 'facilitator' ? 'user' : 'assistant';
+                        let text = msg.text;
+                        if (msg.card) {
+                            text = `【引導師此時遞出一張 OH 卡。卡框文字：「${msg.card.word}」。圖面內容：${msg.card.metaDetails?.visual || '一張投射圖卡'}】\n${msg.text}`;
+                        }
+                        if (history.length && history[history.length - 1].role === role) {
+                            history[history.length - 1].content += '\n' + text;
+                        } else {
+                            history.push({ role, content: text });
+                        }
+                    });
+                    return history;
+                };
+
+                const parseJsonLoose = (raw) => {
+                    const clean = raw.replace(/```json|```/g, '').trim();
+                    const start = clean.indexOf('{');
+                    if (start === -1) throw new Error('AI 回應中找不到 JSON：' + clean.slice(0, 120));
+                    const end = clean.lastIndexOf('}');
+                    try {
+                        return JSON.parse(clean.slice(start, end + 1));
+                    } catch (e) {
+                        // 嘗試修復被截斷的 JSON（例如回應中途被切斷）
+                        let fixed = clean.slice(start).replace(/,\s*$/, '');
+                        if ((fixed.match(/"/g) || []).length % 2 === 1) fixed += '"';
+                        const missing = (fixed.match(/{/g) || []).length - (fixed.match(/}/g) || []).length;
+                        fixed += '}'.repeat(Math.max(0, missing));
+                        return JSON.parse(fixed);
+                    }
+                };
+
+                const readJsonBody = async (response) => {
+                    const bodyText = await response.text();
+                    if (!bodyText || !bodyText.trim()) {
+                        throw new Error(`API 回應為空 (HTTP ${response.status})`);
+                    }
+                    try {
+                        return JSON.parse(bodyText);
+                    } catch (e) {
+                        throw new Error(`API 回應非 JSON (HTTP ${response.status})：${bodyText.slice(0, 200)}`);
+                    }
+                };
+
+                // Unified AI caller.
+                // - No key: keyless Anthropic call (only works inside Claude.ai preview)
+                // - Key "sk-ant-...": direct Anthropic API (works locally / GitHub Pages)
+                // - Key "AIza...": Google Gemini API (works locally / GitHub Pages)
+                const callAI = async (systemPrompt, history) => {
+                    const key = apiKey.value.trim();
+
+                    if (key.startsWith('AIza')) {
+                        const contents = history.map(m => ({
+                            role: m.role === 'assistant' ? 'model' : 'user',
+                            parts: [{ text: m.content }]
+                        }));
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents,
+                                systemInstruction: { parts: [{ text: systemPrompt }] },
+                                generationConfig: { responseMimeType: "application/json" }
+                            })
+                        });
+                        const result = await readJsonBody(response);
+                        if (result.error) throw new Error(result.error.message || 'Gemini API error');
+                        return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    }
+
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (key) {
+                        headers['x-api-key'] = key;
+                        headers['anthropic-version'] = '2023-06-01';
+                        headers['anthropic-dangerous-direct-browser-access'] = 'true';
+                    }
+                    const response = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-6",
+                            max_tokens: 1000,
+                            system: systemPrompt,
+                            // 預填 assistant 開頭的 "{"，強制模型直接輸出 JSON
+                            messages: [...history, { role: 'assistant', content: '{' }]
+                        })
+                    });
+                    const result = await readJsonBody(response);
+                    if (result.error) throw new Error(result.error.message || 'Anthropic API error');
+                    const text = (result.content || [])
+                        .filter(b => b.type === 'text')
+                        .map(b => b.text)
+                        .join('\n');
+                    return text ? '{' + text : '';
+                };
+
+                // 失敗自動重試一次，減少偶發的空回應
+                const callAIWithRetry = async (systemPrompt, history) => {
+                    try {
+                        return await callAI(systemPrompt, history);
+                    } catch (e) {
+                        console.log('AI 第一次呼叫失敗，1 秒後重試…', e.message);
+                        await new Promise(r => setTimeout(r, 1000));
+                        return await callAI(systemPrompt, history);
+                    }
+                };
+
+                const triggerClientResponseLoop = async () => {
+                    isThinking.value = true;
+                    scrollChatToBottom();
+
+                    try {
+                        const rawText = await callAIWithRetry(generateAIClientPrompt(), buildAnthropicHistory());
+                        if (!rawText) throw new Error("Empty AI response");
+
+                        let data;
+                        try {
+                            data = parseJsonLoose(rawText);
+                        } catch (fmtErr) {
+                            // 模型偶爾忘了包 JSON：直接把整段文字當成個案的話，不丟棄好回應
+                            console.log('AI 回應非 JSON 格式，直接採用純文字：', fmtErr.message);
+                            data = {
+                                clientResponse: rawText.replace(/^\{+\s*/, '').trim(),
+                                internalThought: internalThought.value,
+                                hiddenState: null
+                            };
+                        }
+                        messages.value.push({ role: 'client', text: data.clientResponse, card: null });
+                        if (data.hiddenState) hiddenState.value = data.hiddenState;
+                        if (data.internalThought) internalThought.value = data.internalThought;
+                    } catch (e) {
+                        console.log("AI 連線失敗，使用本地擬真投影對白：", e.message);
+                        simulateLocalFallbackResponse();
+                    } finally {
+                        isThinking.value = false;
+                        scrollChatToBottom();
+                    }
+                };
+
+                // Per-character speech habits (OCFS Persona Engine 第十三原則)
+                const speechStyles = {
+                    xiaomei: '說話快、急、直接。容易插嘴、容易先否定再想（「不是啦」「哪有」）。煩躁時句子變短變衝。偶爾自嘲。',
+                    yueyue: '停頓很多、回答很短。常用「嗯……」「還好」「不知道欸」開頭。被逼問會更退縮、句子更短甚至只剩沉默。偶爾小聲補一句真話。',
+                    takeshi: '喜歡講道理、分析利弊，迴避談感受。被問到情緒會轉去講「客觀事實」或反問對方。語氣端著、偶爾流露不耐。',
+                    bigbro: '容易講以前的事、容易離題、容易說教（「我們那個年代」「我跟你講」）。講一講會繞回兒女和退休的失落，但自己沒察覺。'
+                };
+
+                const generateAIClientPrompt = () => {
+                    const client = activeClient.value;
+                    const sessionQText = sessionQuestion.value ? `本次對話主題為：${sessionQuestion.value}` : "自由聊天，沒有預設主題";
+                    const style = speechStyles[client.id] || '用日常口語說話，句子常常不完整。';
+                    const hs = hiddenState.value;
+
+                    return `你正在扮演一位來參加 OH 卡引導對話的普通台灣人，跟一位第一次見面的引導師聊天。
+
+【你是誰】
+${client.name}，${client.age}歲，${client.title}。${sessionQText}。
+你表面上的困擾：${client.presentedIssue}
+你內心深處的核心痛點（你自己「並不知道」這件事，只是隱約感覺生活哪裡卡卡的）：${client.coreIssue}
+
+【你的說話習慣】
+${style}
+
+【最重要的原則：你不知道自己的答案】
+你不是來接受考試，也不是在等引導師猜中答案。你是在聊天的過程中，慢慢「想到」自己的事情。回答前先在心裡問自己：我真的知道嗎？我願意說嗎？我現在信任他嗎？
+
+【絕對禁止鬼打牆 — 最高優先級】
+每次回答前，先回頭看你在這段對話裡「已經說過的每一句話」。你絕對不能重複用過的詞句或說法。如果上一句說了「不知道」，這一句就必須換別的方式（換話題、補一點新細節、修正剛剛的說法、反問、或用動作沉默表示）。每一句回答都必須比上一句多透露「一點點」新的東西——哪怕只是一個小細節或一個新的形容。
+
+【像真人一樣】
+- 可以改口（「等等，不是危險……比較像害怕」）、可以突然想到（「啊，我突然想到」）、可以誤會問題（「你是問圖片？還是問我？」）、可以沉默（用（沉默了一下）（看著圖）表示）、可以回答一半就停住。
+- 看到卡牌時，先描述視覺細節，不要馬上連結到自己的人生。被追問感覺時才慢慢流露。
+- 不用心理學術語（創傷、投射、依附、自我覺察）。一般人只會說：很煩、很累、怪怪的、悶悶的、阿雜。
+- 回答要短。一次只講一個點，把說話的空間留給引導師。
+- 如果引導師急躁逼問或說教，你會防衛、退縮或不耐煩；如果引導師接住了你的情緒，你才慢慢多說一點。
+
+【你目前的內在狀態（延續上一輪，只能小幅變化，每輪增減不超過 12）】
+信任感 ${hs.trust}／防衛 ${hs.defensiveness}／情緒開放 ${hs.openness}／關係深度 ${hs.relationshipDepth}。
+引導師表現好才緩慢上升；被冒犯、被分析、被說教時信任下降、防衛上升。
+
+【輸出格式】
+只輸出 JSON，不要任何其他文字或 markdown 標記：
+{
+  "clientResponse": "你的繁體中文回答（口語、短、像真人、絕不重複之前說過的話）",
+  "internalThought": "你此刻沒說出口的內心OS（一兩句就好）",
+  "hiddenState": { "trust": 數值, "defensiveness": 數值, "openness": 數值, "relationshipDepth": 數值 }
+}`;
+                };
+
+                const localFallbackPool = [
+                    { t: "嗯……很難講欸。就是……悶悶的吧。", v: "我想試著說，但好難開口。" },
+                    { t: "（停了一下）我再想一下……好像也不是一件事而已。", v: "先講哪一個？" },
+                    { t: "怎麼說……最近就一直卡卡的，也講不出是什麼。", v: "他會不會覺得我很奇怪。" },
+                    { t: "欸，等等，你是問我現在的感覺，還是問剛剛那個？", v: "我有點跟不上。" },
+                    { t: "啊，我突然想到一件事……不過好像沒關係，算了。", v: "要說嗎？還是不要好了。" },
+                    { t: "也不是不想講啦……就是不知道從哪裡開始。", v: "如果他不急，我可能會多說一點。" }
+                ];
+                let fallbackCursor = 0;
+
+                const simulateLocalFallbackResponse = () => {
+                    const lastMsg = messages.value[messages.value.length - 1];
+                    let responseText = "";
+                    let innerVoice = "";
+
+                    // Local mock parser detecting if card has just been shared
+                    if (lastMsg && lastMsg.card) {
+                        const card = lastMsg.card;
+                        responseText = `呃... 我看到了... 一個${card.metaDetails.visual}？嗯... 感覺有點亂... 這裡這個東西，看起來... 怎麼說呢，有點危險？（⚠️ AI 連線暫時失敗，此為備用台詞）`;
+                        innerVoice = `這張圖很不舒服，但我還不想把那個連結說出來。`;
+                    } else {
+                        const pick = localFallbackPool[fallbackCursor % localFallbackPool.length];
+                        fallbackCursor++;
+                        responseText = pick.t + "（⚠️ AI 連線暫時失敗，此為備用台詞）";
+                        innerVoice = pick.v;
+                    }
+
+                    setTimeout(() => {
+                        messages.value.push({ role: 'client', text: responseText, card: null });
+                        hiddenState.value.trust = Math.min(100, hiddenState.value.trust + 10);
+                        hiddenState.value.defensiveness = Math.max(0, hiddenState.value.defensiveness - 8);
+                        hiddenState.value.openness = Math.min(100, hiddenState.value.openness + 6);
+                        hiddenState.value.relationshipDepth = Math.min(100, hiddenState.value.relationshipDepth + 8);
+                        internalThought.value = innerVoice;
+                        scrollChatToBottom();
+                    }, 1200);
+                };
+
+                const stopSimulationAndEvaluate = async () => {
+                    trainerStage.value = 'feedback';
+                    isEvaluating.value = true;
+
+                    const client = activeClient.value;
+                    const transcript = messages.value.map(m => `${m.role === 'facilitator' ? '引導師' : client.name}: ${m.text}`).join('\n');
+
+                    const prompt = `你是一位非常有經驗的生命探索與 OH Card 心理投射引導督導。
+                    請評估引導師在這次引導對話紀錄中的整體表現。
+
+                    個案資料：【${client.name}，${client.age}歲，對照影像：${client.imageRef}】
+                    表面呈現困擾：${client.presentedIssue}
+                    內心核心痛點：${client.coreIssue}
+
+                    【對話紀錄】
+                    ${transcript}
+                    【對話紀錄結束】
+
+                    督導核心指標：
+                    1. 引導師是否建立了足夠安全、接納、不帶評判與分析的陪伴關係。
+                    2. 引導師的反映技巧是否精準、有沒有接住個案日常詞彙背後的「情緒痛點」。
+                    3. 是否「過早理性分析」或者「給建議說教」。
+                    4. 是否遺漏了個案對話中微弱的抗拒、不知所措或累的信號。
+                    5. OH Card 投射牌組的運用（引導師是否遵循「先讓個案自由看圖說故事、再帶入字框投射、最後結合」的引導要訣，而不是替個案解牌）。
+
+                    必須以 JSON 格式回覆（請不要包含任何 \`\`\`json 格式標記，直接輸出 JSON）：
+                    {
+                      "scores": {
+                        "relationshipBuilding": 數值 (0-100),
+                        "questioningTechniques": 數值 (0-100),
+                        "empathy": 數值 (0-100),
+                        "overallScore": 數值 (0-100)
+                      },
+                      "evaluation": {
+                        "relationship": "關係建立回饋",
+                        "questioning": "情感反映與提問技術回饋",
+                        "prematureAnalysis": "是否過早說教/給予分析建議",
+                        "missedClues": "遺漏微弱聲音的回饋",
+                        "ohCardTiming": "OH卡看圖說故事引導細節回饋"
+                      },
+                      "suggestions": [
+                        "具體可行的改善建議一",
+                        "具體可行的改善建議二",
+                        "具體可行的改善建議三"
+                      ]
+                    }`;
+
+                    try {
+                        const rawText = await callAIWithRetry(
+                            "你是一位資深 OH Card 引導督導。只輸出 JSON，不要任何其他文字或 markdown 標記。",
+                            [{ role: "user", content: prompt }]
+                        );
+                        if (rawText) {
+                            feedbackData.value = parseJsonLoose(rawText);
+                        } else {
+                            throw new Error();
+                        }
+                    } catch (e) {
+                        console.warn("使用本地督導模板。");
+                        simulateLocalFeedbackReport();
+                    } finally {
+                        isEvaluating.value = false;
+                    }
+                };
+
+                const simulateLocalFeedbackReport = () => {
+                    const client = activeClient.value;
+                    let diffCritique = "";
+
+                    if (client.id === 'yueyue') {
+                        diffCritique = "月月性格內向，當他看圖說出「縮著、把話藏起來」時，代表他投射出了他與強勢姐姐相處的無力感。引導師此時切記不要教他「如何勇敢表達」，而是反映他的無奈：「聽起來你在家裡退讓，是因為真的很在乎姐姐們的感受，也怕說出真話會造成麻煩，對嗎？」";
+                    } else if (client.id === 'takeshi') {
+                        diffCritique = "信義金城武高自尊，當他看到『控制』字眼覺得不爽時，這是非常自然的防禦。引導師要克制教育他『你不該控制家人』的衝動。相反，可以溫柔肯定他對家庭在背後的守護，問他：『撐著這整個家，你最疲憊或最想休息的時候，是什麼樣子呢？』";
+                    } else if (client.id === 'xiaomei') {
+                        diffCritique = "小美渴望安穩的家卻用強勢推遠伴侶。當她把這種焦慮投射在混亂的圖卡上時，引導師若能點出『要強也是因為太害怕重蹈童年的不安』，這將是一個核心突破。不要急著教她『如何跟男友溝通』。";
+                    } else {
+                        diffCritique = "張大哥在退休後面臨掌控感流失。他的抱孫催婚其實是在找尋生存重心。引導師此時要同理他『一輩子努力，現在突然失去生活重心』的寂寞，帶領他從卡牌中自由聯想自己除了家庭之外、久違的個人喜悅與愛好。";
+                    }
+
+                    feedbackData.value = {
+                        scores: {
+                            relationshipBuilding: 78,
+                            questioningTechniques: 72,
+                            empathy: 75,
+                            overallScore: 74
+                        },
+                        evaluation: {
+                            relationship: "諮詢室對話初期營造了輕鬆、不帶批判的氛圍。但在個案表示防備、抗拒或者理智防線拉起時，引導師需更加克制自己想幫個案找出真相或答案的衝動，多陪伴他的『不知道』。",
+                            questioning: "問題大多能維持在開放狀態，但要避免連珠炮式的提問。每次丟出卡牌後，務必給個案充分的靜默思考時間。",
+                            prematureAnalysis: diffCritique,
+                            missedClues: "個案在抱怨生活和家庭不順時，語尾常帶有『很累』、『卡卡的』等微弱情感流露。這代表當時他非常挫敗與孤單，這是絕佳的情感反映點，引導師要好好接住。",
+                            ohCardTiming: "卡片的介入非常巧妙！引導師完美落實了「先看圖、後看字、再結合」的看圖說故事投影法，這大幅繞過了個案大腦的理智防線，引領其潛意識委屈和恐懼藉由隱喻吐露出來，表現優秀。"
+                        },
+                        suggestions: [
+                            "「情感反映優於事件建議」：當個案說『不知道』或『沒什麼感覺』時，請反映其狀態：『現在好像有好多繁雜的念頭，讓你一時間不知道該從何說起，對嗎？』",
+                            "「嚴格遵循投影引導三部曲」：先問個案在圖中第一個看到什麼？這幅畫有什麼感覺？接著才帶入字卡：『看著四周的字，你覺得跟這張圖有什麼聯想嗎？』",
+                            "「放慢步調，與阻抗同在」：當個案出現防禦或反問時，不作辯解，而是肯定他：『我能感受到你對把生活過好的急切，這正是你負責任、有愛的表現。』"
+                        ]
+                    };
+                };
+
+                const resetTrainerSimulation = () => {
+                    selectedProfileId.value = null;
+                    activeClient.value = null;
+                    messages.value = [];
+                    inputMessage.value = '';
+                    isThinking.value = false;
+                    currentSandboxCard.value = null;
+                    hiddenState.value = { trust: 10, defensiveness: 90, openness: 10, relationshipDepth: 10 };
+                    internalThought.value = "";
+                    feedbackData.value = null;
+                    trainerStage.value = 'setup';
+                };
+
+                return {
+                    apiKey,
+                    sessionQuestion,
+                    trainerStage,
+                    selectedProfileId,
+                    activeClient,
+                    messages,
+                    inputMessage,
+                    isThinking,
+                    chatContainer,
+                    hiddenState,
+                    internalThought,
+                    currentSandboxCard,
+                    showPickerModal,
+                    pickerStep,
+                    pickerSearch,
+                    selectedWord,
+                    pickerCustomWord,
+                    selectedImgNum,
+                    isEvaluating,
+                    feedbackData,
+                    clientProfiles,
+                    filteredWords,
+                    filteredImageCards,
+                    handleImgFallback,
+                    startSimulation,
+                    drawRandomCardCombined,
+                    openCardPicker,
+                    closeCardPicker,
+                    selectPickerWord,
+                    selectPickerImage,
+                    savePickerCombination,
+                    shareCardWithClient,
+                    sendFacilitatorInput,
+                    stopSimulationAndEvaluate,
+                    resetTrainerSimulation
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
