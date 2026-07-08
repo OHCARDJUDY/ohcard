@@ -1291,6 +1291,9 @@
                         headers['anthropic-version'] = '2023-06-01';
                         headers['anthropic-dangerous-direct-browser-access'] = 'true';
                     }
+                    // 預填 "{" 強制 JSON 輸出：僅直連 API（有金鑰）時支援；
+                    // Claude.ai 免金鑰代理不支援預填，改靠後端的純文字安全網
+                    const usePrefill = !!key;
                     const response = await fetch("https://api.anthropic.com/v1/messages", {
                         method: 'POST',
                         headers,
@@ -1298,8 +1301,7 @@
                             model: "claude-sonnet-4-6",
                             max_tokens: 1000,
                             system: systemPrompt,
-                            // 預填 assistant 開頭的 "{"，強制模型直接輸出 JSON
-                            messages: [...history, { role: 'assistant', content: '{' }]
+                            messages: usePrefill ? [...history, { role: 'assistant', content: '{' }] : history
                         })
                     });
                     const result = await readJsonBody(response);
@@ -1308,7 +1310,8 @@
                         .filter(b => b.type === 'text')
                         .map(b => b.text)
                         .join('\n');
-                    return text ? '{' + text : '';
+                    if (!text) return '';
+                    return usePrefill ? '{' + text : text;
                 };
 
                 // 失敗自動重試一次，減少偶發的空回應
