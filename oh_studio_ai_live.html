@@ -190,7 +190,7 @@
 
                 <!-- API Key Config and Reset -->
                 <div class="flex items-center gap-3 flex-wrap justify-center">
-                    <div class="relative flex items-center" title="在 Claude.ai 預覽中使用時免填金鑰。若下載到本機或放上 GitHub Pages，請填入 Anthropic (sk-ant-...) 或 Gemini (AIza...) 金鑰，系統會自動判別。">
+                    <div class="relative flex items-center" title="在 Claude.ai 預覽中使用時免填金鑰。下載到本機或 GitHub Pages 時請填入金鑰：Gemini（AQ. 或 AIza 開頭，aistudio.google.com/apikey 免費申請）或 Anthropic（sk-ant 開頭）。">
                         <span class="absolute left-2.5 text-[#9E8675] text-xs"><i class="fa-solid fa-key"></i></span>
                         <input 
                             v-model="apiKey" 
@@ -1261,14 +1261,19 @@
                 const callAI = async (systemPrompt, history) => {
                     const key = apiKey.value.trim();
 
-                    if (key.startsWith('AIza')) {
+                    // 有金鑰且不是 Anthropic 的 sk-ant 開頭 → 一律走 Gemini
+                    // （Google 新版金鑰為 AQ. 開頭、舊版為 AIza 開頭，兩者原生端點皆可用，不驗證格式）
+                    if (key && !key.startsWith('sk-ant')) {
                         const contents = history.map(m => ({
                             role: m.role === 'assistant' ? 'model' : 'user',
                             parts: [{ text: m.content }]
                         }));
-                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-goog-api-key': key
+                            },
                             body: JSON.stringify({
                                 contents,
                                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -1342,7 +1347,7 @@
                         if (data.internalThought) internalThought.value = data.internalThought;
                     } catch (e) {
                         console.log("AI 連線失敗，使用本地擬真投影對白：", e.message);
-                        simulateLocalFallbackResponse();
+                        simulateLocalFallbackResponse(e.message);
                     } finally {
                         isThinking.value = false;
                         scrollChatToBottom();
@@ -1409,20 +1414,21 @@ ${style}
                 ];
                 let fallbackCursor = 0;
 
-                const simulateLocalFallbackResponse = () => {
+                const simulateLocalFallbackResponse = (reason) => {
                     const lastMsg = messages.value[messages.value.length - 1];
                     let responseText = "";
                     let innerVoice = "";
+                    const tag = `（⚠️ AI 連線失敗${reason ? '：' + reason : ''}）`;
 
                     // Local mock parser detecting if card has just been shared
                     if (lastMsg && lastMsg.card) {
                         const card = lastMsg.card;
-                        responseText = `呃... 我看到了... 一個${card.metaDetails.visual}？嗯... 感覺有點亂... 這裡這個東西，看起來... 怎麼說呢，有點危險？（⚠️ AI 連線暫時失敗，此為備用台詞）`;
+                        responseText = `呃... 我看到了... 一個${card.metaDetails.visual}？嗯... 感覺有點亂... 這裡這個東西，看起來... 怎麼說呢，有點危險？${tag}`;
                         innerVoice = `這張圖很不舒服，但我還不想把那個連結說出來。`;
                     } else {
                         const pick = localFallbackPool[fallbackCursor % localFallbackPool.length];
                         fallbackCursor++;
-                        responseText = pick.t + "（⚠️ AI 連線暫時失敗，此為備用台詞）";
+                        responseText = pick.t + tag;
                         innerVoice = pick.v;
                     }
 
