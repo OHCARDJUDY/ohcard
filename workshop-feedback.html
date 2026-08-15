@@ -114,11 +114,44 @@ let questions = [
   }
 ];
 
+function getWorkshopConfigJsonp_(){
+  return new Promise((resolve, reject) => {
+    const callbackName = `ohWorkshopConfig_${Date.now()}_${Math.floor(Math.random()*100000)}`;
+    const script = document.createElement('script');
+    let finished = false;
+
+    const cleanup = () => {
+      if(finished) return;
+      finished = true;
+      delete window[callbackName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('讀取活動設定逾時'));
+    }, 10000);
+
+    window[callbackName] = (data) => {
+      clearTimeout(timer);
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      clearTimeout(timer);
+      cleanup();
+      reject(new Error('無法連線到活動設定'));
+    };
+
+    script.src = `${GAS_URL}?action=workshopConfig&event=${encodeURIComponent(eventId)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+    document.head.appendChild(script);
+  });
+}
+
 async function loadWorkshopConfig(){
   try{
-    const url = `${GAS_URL}?action=workshopConfig&event=${encodeURIComponent(eventId)}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    const data = await getWorkshopConfigJsonp_();
 
     if(!data || data.result !== 'success'){
       throw new Error(data?.error || '讀取活動設定失敗');
@@ -140,6 +173,7 @@ async function loadWorkshopConfig(){
 
     let extraContent = (data.extraContent || data.hiddenTopic || '').trim();
     const legacyReveal = (data.revealGuide || '').trim();
+
     if(legacyReveal && !extraContent.includes(legacyReveal)){
       extraContent = extraContent
         ? `${extraContent}\n\n${legacyReveal}`
@@ -160,11 +194,6 @@ async function loadWorkshopConfig(){
       if(extraBlock) extraBlock.classList.add('hidden');
     }
 
-    // 更新畫面上的活動名稱（若頁面上有對應元素）
-    const titleEl = document.getElementById('eventName');
-    if(titleEl) titleEl.textContent = eventName;
-
-    // Q2：用「｜」分隔
     if(data.q2Options){
       questions[1].options = data.q2Options
         .split('｜')
@@ -172,15 +201,15 @@ async function loadWorkshopConfig(){
         .filter(Boolean);
     }
 
-    // Q3：每場主題題目
     if(data.q3Question){
       questions[2].title = data.q3Question;
     }
 
     configLoaded = true;
     return true;
+
   }catch(err){
-    console.warn('讀取工作坊設定失敗：', err);
+    console.error('讀取工作坊設定失敗：', err);
     if(!eventName) eventName = eventId;
     configLoaded = false;
     return false;
