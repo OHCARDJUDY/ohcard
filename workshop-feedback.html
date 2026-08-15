@@ -189,6 +189,11 @@ async function loadWorkshopConfig(){
 
 let step=-1; const form={name:'',answers:{},feedback:''};
 
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadWorkshopConfig();
+});
+
+
 async function start(){
   const ok = await loadWorkshopConfig();
   if(!ok){
