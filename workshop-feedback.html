@@ -136,8 +136,15 @@ async function loadWorkshopConfig(){
     const extraTitleEl = document.getElementById('extraInfoTitle');
     const extraContentEl = document.getElementById('extraInfoContent');
 
-    const extraTitle = (data.extraTitle || '').trim();
-    const extraContent = (data.extraContent || '').trim();
+    const extraTitle = (data.extraTitle || data.formIntro || '').trim();
+
+    let extraContent = (data.extraContent || data.hiddenTopic || '').trim();
+    const legacyReveal = (data.revealGuide || '').trim();
+    if(legacyReveal && !extraContent.includes(legacyReveal)){
+      extraContent = extraContent
+        ? `${extraContent}\n\n${legacyReveal}`
+        : legacyReveal;
+    }
 
     if(extraTitle || extraContent){
       if(extraTitleEl){
