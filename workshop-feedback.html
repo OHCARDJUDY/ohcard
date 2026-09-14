@@ -270,8 +270,8 @@
           <p
             class="text-sm text-stone-500 leading-relaxed max-w-md mx-auto"
           >
-            可能是目前網路或 Google 服務連線不穩。
-            你的答案還保留在這個頁面，可以直接再試一次。
+            可能是活動尚未開放、目前網路不穩，或 Google 服務暫時無法連線。
+            你的答案還保留在這個頁面，請不要重新整理，可以直接再試一次。
           </p>
 
           <button
@@ -348,6 +348,9 @@ let eventName =
 
 let configLoaded =
   false;
+
+let formAvailable = false;
+let configErrorMessage = '';
 
 
 
@@ -776,6 +779,61 @@ async function loadWorkshopConfig(){
 
 
 
+function showFormUnavailable(message){
+
+  const welcome =
+    document.getElementById('welcome');
+
+  const questionArea =
+    document.getElementById('questionArea');
+
+  if(questionArea){
+    questionArea.classList.add('hidden');
+  }
+
+  if(welcome){
+    welcome.classList.remove('hidden');
+
+    welcome.querySelectorAll(
+      'input, textarea, select, button'
+    ).forEach(el => {
+      el.disabled = true;
+      el.classList.add(
+        'opacity-50',
+        'cursor-not-allowed'
+      );
+    });
+  }
+
+  let box =
+    document.getElementById(
+      'form-status-error'
+    );
+
+  if(!box){
+
+    box =
+      document.createElement('div');
+
+    box.id =
+      'form-status-error';
+
+    box.className =
+      'rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 leading-relaxed';
+
+    if(welcome){
+      welcome.prepend(box);
+    }
+
+  }
+
+  box.textContent =
+    message ||
+    '這場工作坊目前尚未開放填寫回饋。';
+
+}
+
+
     /*
       Q3 動態題目
     */
@@ -790,74 +848,34 @@ async function loadWorkshopConfig(){
 
 
     configLoaded = true;
+    formAvailable = true;
+    configErrorMessage = '';
 
     return true;
 
   }
   catch(err){
 
-    /*
-      ★ 這裡是新版最重要的地方
-
-      以前：
-      GAS 失敗 → 整份問卷不能填。
-
-      現在：
-      GAS 失敗 → 繼續使用 HTML 備用題目。
-    */
-
-    console.warn(
-      '讀取工作坊設定失敗，改用內建備用題目：',
+    console.error(
+      '讀取工作坊設定失敗：',
       err
     );
 
+    configLoaded = false;
+    formAvailable = false;
+    configErrorMessage =
+      err?.message ||
+      '這場工作坊目前尚未開放填寫回饋。';
 
-
-    if(!eventName){
-
-      eventName =
-        eventId;
-
-    }
-
-
-
-    configLoaded =
-      false;
-
-
-
-    /*
-      Q2 沒有成功載入活動選項時，
-      告訴使用者直接使用文字欄。
-    */
-
-    if(
-      !questions[1].options.length
-    ){
-
-      questions[1].hint =
-        '活動設定暫時沒有載入，請直接在下方「其他」寫下最有感／印象最深的環節。';
-
-    }
-
-
-
-    /*
-      注意：
-      這裡即使 return false，
-      也不會再阻止 start()。
-    */
+    showFormUnavailable(
+      configErrorMessage
+    );
 
     return false;
 
   }
 
 }
-
-
-
-/* ======================================================
    表單狀態
 ====================================================== */
 
@@ -904,6 +922,21 @@ document.addEventListener(
 ====================================================== */
 
 function start(){
+
+  if(
+    !formAvailable ||
+    !configLoaded
+  ){
+
+    showFormUnavailable(
+      configErrorMessage ||
+      '這場工作坊目前尚未開放填寫回饋。'
+    );
+
+    return;
+
+  }
+
 
   /*
     ★ 不再重新呼叫 loadWorkshopConfig()
@@ -1636,6 +1669,24 @@ async function submit(){
 
   try{
 
+    // 送出前再確認一次活動仍是開放狀態。
+    const latestConfig =
+      await getWorkshopConfigJsonp_();
+
+    if(
+      !latestConfig ||
+      latestConfig.result !== 'success'
+    ){
+
+      throw new Error(
+        latestConfig?.error ||
+        '這場工作坊目前尚未開放填寫回饋。'
+      );
+
+    }
+
+
+
     await fetch(
       GAS_URL,
       {
@@ -1648,7 +1699,7 @@ async function submit(){
 
         headers: {
           'Content-Type':
-            'application/json'
+            'text/plain;charset=utf-8'
         },
 
         body:
@@ -1662,8 +1713,10 @@ async function submit(){
 
 
     /*
-      fetch 沒有拋出錯誤，
-      才顯示完成頁。
+      Google Apps Script Web App 跨網域 POST 仍採 no-cors。
+      因此前端會在「進頁面」與「送出前」各確認一次活動狀態。
+      後端防呆版另外會把驗證失敗的原始資料寫入
+      「⚠️ Failed Submissions」，避免資料再次消失。
     */
 
     document
@@ -1694,6 +1747,10 @@ async function submit(){
       '送出回饋失敗：',
       e
     );
+
+    configErrorMessage =
+      e?.message ||
+      '送出失敗，請稍後再試。';
 
 
 
